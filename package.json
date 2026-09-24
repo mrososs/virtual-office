@@ -1,0 +1,23 @@
+{
+  "name": "virtual-office",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Real-time virtual office for remote software teams",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace frontend",
+    "dev:backend": "npm run start:dev --workspace backend",
+    "build:shared": "npm run build --workspace shared",
+    "build:frontend": "npm run build --workspace frontend",
+    "build:backend": "npm run build --workspace backend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "lint": "npm run lint --workspace frontend && npm run lint --workspace backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

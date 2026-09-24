@@ -1,0 +1,89 @@
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  [data-theme='dark'] {
+    color-scheme: dark;
+    --vo-canvas: 10 12 17;
+    --vo-surface: 18 21 28;
+    --vo-raised: 25 29 38;
+    --vo-hover: 33 38 50;
+    --vo-line: 255 255 255;
+    --vo-ink: 230 232 238;
+    --vo-muted: 155 163 180;
+    --vo-subtle: 107 115 133;
+    --vo-accent: 124 131 255;
+    --vo-accent-ink: 255 255 255;
+  }
+
+  /* Light palette — wired but not yet selectable (ThemeProvider only emits 'dark' today). */
+  [data-theme='light'] {
+    color-scheme: light;
+    --vo-canvas: 244 245 248;
+    --vo-surface: 255 255 255;
+    --vo-raised: 248 249 251;
+    --vo-hover: 238 240 244;
+    --vo-line: 15 23 42;
+    --vo-ink: 17 24 39;
+    --vo-muted: 75 85 99;
+    --vo-subtle: 107 114 128;
+    --vo-accent: 91 97 238;
+    --vo-accent-ink: 255 255 255;
+  }
+
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-[13px] text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  ::selection {
+    @apply bg-accent/30;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/60 ring-offset-0;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.12) transparent;
+  }
+}
+
+@layer components {
+  .vo-panel {
+    @apply rounded-xl border border-line/[0.07] bg-surface/95 shadow-panel backdrop-blur-md;
+  }
+
+  .vo-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line/[0.07] bg-surface/85 px-2.5 py-1 text-2xs font-medium text-muted shadow-panel backdrop-blur-md;
+  }
+
+  .vo-kbd {
+    @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded border border-line/[0.12] bg-raised px-1 text-[10px] font-semibold text-muted;
+  }
+
+  .vo-section-label {
+    @apply text-[10.5px] font-semibold uppercase tracking-[0.08em] text-subtle;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

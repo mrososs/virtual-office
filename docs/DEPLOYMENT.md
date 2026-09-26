@@ -1,7 +1,7 @@
 # Deployment — Vercel (SPA) + Railway (API)
 
 ```text
-browser ──► https://<app>.vercel.app          Vue SPA + PWA (static, Vercel)
+browser ──► https://isaned-virtual-office.vercel.app   Vue SPA + PWA (static, Vercel)
    │            └─ /api/*  ──rewrite──►  https://api-production-15b0.up.railway.app/api/*
    │                                          NestJS (Railway) ──► Supabase
    └── wss://api-production-15b0.up.railway.app/socket.io   (direct, realtime ticket)
@@ -43,7 +43,7 @@ Variables (secrets are set from the CLI, never committed):
 | `NODE_ENV` | `production` (boot refuses missing secrets / demo mode) |
 | `NPM_CONFIG_INCLUDE` | `dev` (the build needs TypeScript and the Nest CLI) |
 | `PORT` | `8080` |
-| `APP_URL` | the Vercel production URL, `https://…` |
+| `APP_URL` | `https://isaned-virtual-office.vercel.app` (the Vercel production URL) |
 | `TRUST_PROXY_HOPS` | `2` (Vercel + Railway proxies → rate limits see the visitor) |
 | `AUTH_PROVIDER` / `DEMO_MODE` | `azure_pat` / `false` |
 | `SESSION_SECRET` | production-only random value (≥ 32 chars) |
@@ -55,11 +55,13 @@ Variables (secrets are set from the CLI, never committed):
 
 Deploy: `railway link` (project, environment `production`, service `api`), then
 `railway up` from the repository root. The CLI uploads the working tree minus
-`.gitignore`d files, so `backend/.env` never leaves the machine.
+`.gitignore`d and [`.railwayignore`](../.railwayignore)d files, so `backend/.env`
+never leaves the machine. (Railway plans to retire `railway.json` on 2026-12-01 in
+favor of `.railway/railway.ts`: `railway config migrate`.)
 
 ## Vercel (SPA)
 
-Project `isaned-virtual-office`. [`vercel.json`](../vercel.json) sets the npm
+Project `isaned-virtual-office` (production: https://isaned-virtual-office.vercel.app). [`vercel.json`](../vercel.json) sets the npm
 workspace build, output `frontend/dist`, the `/api` rewrite, the SPA fallback,
 and cache headers (`sw.js`, manifest and `index.html` always revalidate; hashed
 `/assets` are immutable).
@@ -87,6 +89,6 @@ before (Supabase MCP / SQL editor); deploying the API never changes the schema.
 
 ## After a deploy
 
-1. `GET https://<app>.vercel.app/api/auth/config` → `{"provider":"azure_pat", …}`.
+1. `GET https://isaned-virtual-office.vercel.app/api/auth/config` → `{"provider":"azure_pat", …}`.
 2. Sign in on the Vercel URL (work email + your own read-only PAT).
 3. The office shows *Live*: `POST /api/auth/realtime-ticket` → 200, socket connected.

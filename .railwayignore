@@ -1,0 +1,9 @@
+# `railway up` uploads the working tree minus .gitignore and this file.
+# Defense in depth: secrets and local-only files never leave the machine.
+**/.env
+**/.env.*
+!**/.env.example
+.vercel
+screen shot
+**/node_modules
+**/dist

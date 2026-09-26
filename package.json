@@ -19,6 +19,6 @@
     "lint": "npm run lint --workspace frontend && npm run lint --workspace backend"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }

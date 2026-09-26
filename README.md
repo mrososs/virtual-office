@@ -29,7 +29,7 @@ Plain npm workspaces monorepo — no Nx/Turborepo.
 
 ## Run it
 
-Requires Node 20+ (developed on Node 24).
+Requires Node 22+ (supabase-js needs its native WebSocket; developed on Node 24).
 
 ### Demo mode (no Microsoft / Supabase needed)
 

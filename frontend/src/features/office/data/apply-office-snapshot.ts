@@ -12,25 +12,24 @@ export function applyOfficeSnapshot(snapshot: OfficeSnapshot): void {
     organizationName: snapshot.organizationName,
     office: snapshot.office,
     floor: snapshot.floor,
-    teams: snapshot.teams,
     map: snapshot.map,
   });
   useRoomStore().setLayout(snapshot.rooms, snapshot.desks);
+  useEmployeeStore().setAvatarProfiles(snapshot.avatarProfiles);
   applyDynamicState(snapshot);
   useFeedStore().setItems(snapshot.feed);
 }
 
 /**
  * Replaces only the fast-changing domain state (people, meetings, work),
- * keeping layout and where avatars currently stand. Used by demo resets.
+ * keeping layout, avatar profiles (identity, not simulation state — a
+ * teammate's live avatar change must survive a demo reset) and where avatars
+ * currently stand. Used by demo resets.
  */
-export function applyDynamicState(snapshot: Pick<OfficeSnapshot, 'employees' | 'avatarAppearances' | 'meetings' | 'workItems' | 'pullRequests' | 'builds' | 'sprint'>): void {
+export function applyDynamicState(snapshot: Pick<OfficeSnapshot, 'employees' | 'meetings' | 'workItems' | 'pullRequests' | 'builds' | 'sprint'>): void {
   const employeeStore = useEmployeeStore();
   const currentRooms = new Map(Object.values(employeeStore.employeesById).map((employee) => [employee.id, employee.room]));
-  employeeStore.setEmployees(
-    snapshot.employees.map((employee) => ({ ...employee, room: currentRooms.get(employee.id) ?? employee.room })),
-    snapshot.avatarAppearances,
-  );
+  employeeStore.setEmployees(snapshot.employees.map((employee) => ({ ...employee, room: currentRooms.get(employee.id) ?? employee.room })));
   useMeetingStore().setMeetings(snapshot.meetings);
   useWorkStore().setAll({
     workItems: snapshot.workItems,

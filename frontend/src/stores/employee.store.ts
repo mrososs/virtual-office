@@ -1,29 +1,32 @@
-import type {
-  Employee,
-  EmployeeActivity,
-  EmployeeMeetingRef,
-  EmployeePresence,
-  EmployeeRoom,
-  UUID,
+import {
+  normalizeAvatarAppearance,
+  type AvatarAppearance,
+  type AvatarProfile,
+  type Employee,
+  type EmployeeActivity,
+  type EmployeeMeetingRef,
+  type EmployeePresence,
+  type EmployeeRoom,
+  type UUID,
 } from '@virtual-office/shared';
 import { defineStore } from 'pinia';
 
-import { resolveAvatarAppearance, type AvatarAppearance } from '@/shared/utils/avatar-appearance';
-
 interface EmployeeStoreState {
   employeesById: Record<UUID, Employee>;
-  appearanceOverrides: Record<UUID, Partial<AvatarAppearance>>;
+  /** Everyone's saved avatar, keyed by employee. Missing = not created yet (rendered with the default look). */
+  avatarProfilesById: Record<UUID, AvatarProfile>;
 }
 
 /**
  * Vue-side source of truth for employee domain data (presence, activity,
- * meeting, current room). Positions are NOT mirrored here every frame —
- * Phaser owns live coordinates and only reports room transitions.
+ * meeting, current room) and each person's avatar profile. Positions are NOT
+ * mirrored here every frame — Phaser owns live coordinates and only reports
+ * room transitions.
  */
 export const useEmployeeStore = defineStore('employee', {
   state: (): EmployeeStoreState => ({
     employeesById: {},
-    appearanceOverrides: {},
+    avatarProfilesById: {},
   }),
 
   getters: {
@@ -35,16 +38,28 @@ export const useEmployeeStore = defineStore('employee', {
         state.employeesById[id],
     onlineCount: (state): number =>
       Object.values(state.employeesById).filter((employee) => employee.presence.status !== 'OFFLINE').length,
+    avatarProfileOf:
+      (state) =>
+      (id: UUID): AvatarProfile | undefined =>
+        state.avatarProfilesById[id],
+    /** Always renderable: invalid or missing cosmetics fall back to defaults. */
     appearanceOf:
       (state) =>
       (id: UUID): AvatarAppearance =>
-        resolveAvatarAppearance(id, state.appearanceOverrides[id]),
+        normalizeAvatarAppearance(state.avatarProfilesById[id]),
   },
 
   actions: {
-    setEmployees(employees: Employee[], appearanceOverrides: Record<UUID, Partial<AvatarAppearance>> = {}): void {
+    setEmployees(employees: Employee[]): void {
       this.employeesById = Object.fromEntries(employees.map((employee) => [employee.id, employee]));
-      this.appearanceOverrides = appearanceOverrides;
+    },
+
+    setAvatarProfiles(profiles: AvatarProfile[]): void {
+      this.avatarProfilesById = Object.fromEntries(profiles.map((profile) => [profile.employeeId, profile]));
+    },
+
+    upsertAvatarProfile(profile: AvatarProfile): void {
+      this.avatarProfilesById[profile.employeeId] = profile;
     },
 
     setActivity(employeeId: UUID, activity: EmployeeActivity, meeting: EmployeeMeetingRef | null = null): void {

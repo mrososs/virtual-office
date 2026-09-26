@@ -29,6 +29,8 @@ export function formatStatusLine(employee: Employee, lookups: StatusLookups, now
       return `Working${ref}`;
     case 'CODING':
       return `Coding${ref}`;
+    case 'TESTING':
+      return `Testing${ref}`;
     case 'BLOCKED':
       return `Blocked${ref}`;
     case 'CODE_REVIEW': {

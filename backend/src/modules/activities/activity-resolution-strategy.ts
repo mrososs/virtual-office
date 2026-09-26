@@ -33,6 +33,7 @@ export const DEFAULT_ACTIVITY_PRIORITY: ActivityType[] = [
   'BLOCKED',
   'CODE_REVIEW',
   'BUILDING',
+  'TESTING',
   'CODING',
   'WORKING',
   'FOCUS',

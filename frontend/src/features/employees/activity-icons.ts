@@ -1,6 +1,9 @@
 import type { ActivityType, RoomType } from '@virtual-office/shared';
 import {
   Briefcase,
+  ClipboardList,
+  Compass,
+  FlaskConical,
   Code,
   Coffee,
   Crown,
@@ -10,13 +13,11 @@ import {
   Hammer,
   Laptop,
   Moon,
-  Palette,
   Bug,
   CircleCheck,
   CircleDashed,
   TriangleAlert,
   Users,
-  Utensils,
   Video,
   WifiOff,
   type LucideIcon,
@@ -28,6 +29,7 @@ export const ACTIVITY_ICONS: Record<ActivityType, LucideIcon> = {
   CODING: Code,
   CODE_REVIEW: Eye,
   BUILDING: Hammer,
+  TESTING: FlaskConical,
   BLOCKED: TriangleAlert,
   MEETING: Video,
   FOCUS: Moon,
@@ -37,16 +39,14 @@ export const ACTIVITY_ICONS: Record<ActivityType, LucideIcon> = {
 };
 
 export const ROOM_ICONS: Record<RoomType, LucideIcon> = {
+  MANAGEMENT: Crown,
+  PROJECT_MANAGEMENT: ClipboardList,
+  TEAM_LEAD: Compass,
   DEVELOPMENT: Code,
-  DESIGN: Palette,
   QA: Bug,
-  CODE_REVIEW: Eye,
   MEETING: Users,
-  MANAGER: Crown,
-  FOCUS: Moon,
-  GAME: Gamepad2,
-  KITCHEN: Utensils,
-  LOUNGE: Coffee,
+  CODE_REVIEW: Eye,
+  BREAK: Gamepad2,
   GENERAL: DoorOpen,
 };
 

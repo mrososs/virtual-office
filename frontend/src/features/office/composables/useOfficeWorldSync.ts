@@ -1,4 +1,6 @@
 import {
+  avatarAppearanceKey,
+  normalizeAvatarProfile,
   resolveActivityPlacement,
   type Employee,
   type PlacementTarget,
@@ -50,6 +52,7 @@ export function useOfficeWorldSync() {
   const lastStatus = new Map<UUID, string>();
   const lastPlacement = new Map<UUID, string>();
   const lastRoomMeeting = new Map<UUID, string>();
+  const lastAppearance = new Map<UUID, string>();
 
   const localEmployeeId = computed(() => authStore.currentEmployeeId);
 
@@ -97,6 +100,9 @@ export function useOfficeWorldSync() {
       }),
   );
 
+  /** Appearance changes are rare (a save, a teammate's live update): diffed by look key, never per frame. */
+  const appearanceKeys = computed(() => new Map(employeeStore.all.map((employee) => [employee.id, avatarAppearanceKey(employeeStore.appearanceOf(employee.id))])));
+
   function worldState(employee: Employee): EmployeeWorldState {
     return {
       status: statusView(employee),
@@ -112,6 +118,8 @@ export function useOfficeWorldSync() {
     for (const [id, placement] of placements.value) lastPlacement.set(id, JSON.stringify(placement));
     lastRoomMeeting.clear();
     for (const state of roomMeetings.value) lastRoomMeeting.set(state.roomId, JSON.stringify(state.meeting));
+    lastAppearance.clear();
+    for (const [id, key] of appearanceKeys.value) lastAppearance.set(id, key);
   }
 
   /** Sends the full world once Phaser reports GAME_READY and the data is loaded. */
@@ -126,6 +134,7 @@ export function useOfficeWorldSync() {
       rooms: roomStore.all.map((room) => toRaw(room)),
       desks: Object.values(roomStore.desksById).map((desk) => toRaw(desk)),
       localPlayer: worldState(local),
+      localAvatar: toRaw(employeeStore.avatarProfileOf(local.id)) ?? null,
       employees: employeeStore.all.filter((employee) => employee.id !== localId).map(worldState),
       roomMeetings: roomMeetings.value,
       realtime,
@@ -170,6 +179,19 @@ export function useOfficeWorldSync() {
       if (lastPlacement.get(employeeId) === key) continue;
       lastPlacement.set(employeeId, key);
       gameBridge.emit(GAME_EVENTS.MOVE_EMPLOYEE, { employeeId, placement });
+    }
+  });
+
+  watch(appearanceKeys, (keys) => {
+    if (!connected.value) return;
+    for (const [employeeId, key] of keys) {
+      if (lastAppearance.get(employeeId) === key) continue;
+      lastAppearance.set(employeeId, key);
+      gameBridge.emit(GAME_EVENTS.SET_EMPLOYEE_APPEARANCE, {
+        employeeId,
+        appearance: employeeStore.appearanceOf(employeeId),
+        profile: toRaw(employeeStore.avatarProfileOf(employeeId)) ?? null,
+      });
     }
   });
 
@@ -233,6 +255,11 @@ export function useOfficeWorldSync() {
   useGameBridgeEvent(GAME_EVENTS.LOCAL_NAVIGATION_CHANGED, ({ label }) => (uiStore.localNavigationLabel = label));
   useGameBridgeEvent(GAME_EVENTS.REALTIME_STATUS_CHANGED, ({ status }) => officeStore.setRealtimeStatus(status));
   useGameBridgeEvent(GAME_EVENTS.LIVE_EMPLOYEES_CHANGED, ({ employeeIds }) => (uiStore.liveEmployeeIds = employeeIds));
+  // A teammate's look arrived over the socket: store it (UI badges update) and let the watcher above re-skin them.
+  useGameBridgeEvent(GAME_EVENTS.REMOTE_AVATAR_RECEIVED, ({ employeeId, avatar }) => {
+    if (employeeId === localEmployeeId.value || !employeeStore.byId(employeeId)) return;
+    employeeStore.upsertAvatarProfile(normalizeAvatarProfile(avatar, employeeId));
+  });
 
   return { sendInit, disconnect, connected };
 }

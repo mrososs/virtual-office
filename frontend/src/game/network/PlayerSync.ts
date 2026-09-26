@@ -1,5 +1,6 @@
 import {
   SOCKET_EVENTS,
+  type AvatarProfile,
   type Direction,
   type PlayerPositionBroadcast,
   type UUID,
@@ -37,8 +38,9 @@ export class PlayerSync {
     this.officeSocket.off(SOCKET_EVENTS.PLAYER_POSITION, this.handlePositionBroadcast);
   }
 
-  join(officeId: UUID, position: Vector2, direction: Direction): void {
-    this.officeSocket.emit(SOCKET_EVENTS.OFFICE_JOIN, { officeId, employeeId: this.localEmployeeId, position, direction });
+  /** The avatar travels once here (and on change via AvatarSync), never with movement packets. */
+  join(officeId: UUID, position: Vector2, direction: Direction, avatar: AvatarProfile | null): void {
+    this.officeSocket.emit(SOCKET_EVENTS.OFFICE_JOIN, { officeId, employeeId: this.localEmployeeId, position, direction, avatar });
   }
 
   report(position: Vector2, direction: Direction, moving: boolean, now: number): void {

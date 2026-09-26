@@ -1,15 +1,16 @@
-import type { Direction, UUID, Vector2 } from '@virtual-office/shared';
+import type { AvatarAppearance, Direction, UUID, Vector2 } from '@virtual-office/shared';
 import Phaser from 'phaser';
 
+import type { AvatarFactory } from '@/game/avatars/AvatarFactory';
 import type { EmployeeStatusView } from '@/game/bridge/GameEvents';
 import { badgeScale, badgeTextureKey, ensureBadgeTextures } from '@/game/rendering/badge-textures';
-import { ensureAvatarShadowTexture } from '@/game/rendering/character-textures';
+import { ensureAvatarShadowTexture } from '@/game/rendering/avatar-shadow';
 import { DEPTH } from '@/game/rendering/depth';
 import { renderScaleOf } from '@/game/rendering/render-scale';
 import { ensureAvatarRingTexture, uiTextureScale, type AvatarRingStyle } from '@/game/rendering/ui-textures';
 import { WORLD_COLORS } from '@/game/rendering/world-palette';
 import { ACTIVITY_META, PRESENCE_META, hexToNumber } from '@/shared/constants/activity-meta';
-import { firstNameOf, type AvatarAppearance } from '@/shared/utils/avatar-appearance';
+import { firstNameOf } from '@/shared/utils/names';
 
 import { AvatarLabel } from './AvatarLabel';
 import { Player } from './Player';
@@ -27,6 +28,7 @@ export interface EmployeeAvatarOptions {
   position: Vector2;
   facing: Direction;
   isLocal: boolean;
+  avatars: AvatarFactory;
 }
 
 /**
@@ -63,8 +65,8 @@ export class EmployeeAvatar {
 
     const employeeId: UUID = options.status.employeeId;
     this.body = options.isLocal
-      ? new Player(scene, employeeId, options.position, options.appearance)
-      : new RemotePlayer(scene, employeeId, options.position, options.appearance);
+      ? new Player(scene, employeeId, options.position, options.appearance, options.avatars)
+      : new RemotePlayer(scene, employeeId, options.position, options.appearance, options.avatars);
     this.body.face(options.facing);
 
     const { textureScale } = renderScaleOf(scene);
@@ -77,7 +79,7 @@ export class EmployeeAvatar {
 
     this.applyStatus(options.status);
     this.redrawRing();
-    this.sync();
+    this.sync(0);
   }
 
   get employeeId(): UUID {
@@ -122,6 +124,11 @@ export class EmployeeAvatar {
     this.selected = selected;
     this.redrawRing();
     this.renderLabel();
+  }
+
+  /** Re-skins this avatar in place (e.g. its owner saved a new look). */
+  setAppearance(appearance: AvatarAppearance): void {
+    this.body.setAppearance(appearance);
   }
 
   setController(controller: AvatarController): void {
@@ -189,14 +196,14 @@ export class EmployeeAvatar {
     });
   }
 
-  /** Per-frame: motion detection, animation choice, depth and overlay positions. */
-  sync(): void {
+  /** Per-frame: motion detection, animation, depth and overlay positions. */
+  sync(deltaMs: number): void {
     const { x, y } = this.body;
     const moved = Math.abs(x - this.lastPosition.x) > MOTION_EPSILON || Math.abs(y - this.lastPosition.y) > MOTION_EPSILON;
     this.movingFrames = moved ? 3 : Math.max(0, this.movingFrames - 1);
     this.lastPosition.x = x;
     this.lastPosition.y = y;
-    this.body.updateMotion(this.movingFrames > 0);
+    this.body.updateMotion(this.movingFrames > 0, deltaMs);
 
     this.body.setDepth(y);
     this.shadow.setPosition(x, y + 1).setDepth(y - 0.8);

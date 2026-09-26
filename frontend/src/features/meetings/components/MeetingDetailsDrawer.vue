@@ -7,7 +7,7 @@ import EmployeeAvatar from '@/features/employees/components/EmployeeAvatar.vue';
 import { useOfficeCommands } from '@/features/office/composables/useOfficeCommands';
 import { BaseButton, DrawerShell } from '@/shared/components';
 import { useNow } from '@/shared/composables';
-import { initialsOf } from '@/shared/utils/avatar-appearance';
+import { initialsOf } from '@/shared/utils/names';
 import { formatCountdown, formatDurationMinutes, formatRelativeTime, formatTimeRange } from '@/shared/utils/format';
 import { useAuthStore } from '@/stores/auth.store';
 import { useEmployeeStore } from '@/stores/employee.store';

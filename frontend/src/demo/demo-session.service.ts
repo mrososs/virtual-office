@@ -35,6 +35,9 @@ class DemoSessionService {
       organizationId: DEMO_ORGANIZATION_ID,
       displayName: identity.displayName,
       email: `${identity.employeeId}@demo.local`,
+      role: identity.role,
+      jobTitle: identity.jobTitle,
+      team: identity.team,
     });
     this.realtimeToken = this.requestRealtimeToken(identity.employeeId);
     return identity;

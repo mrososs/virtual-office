@@ -1,0 +1,24 @@
+{
+  "_about": [
+    "iSaned team roster — informational only. The app never reads this file.",
+    "Only people in backend/seed/employees.json (gitignored) can sign in. To approve someone, copy their member entry into that file, set their confirmed work email exactly as Azure DevOps shows it, and run: npm run seed:employees -w backend",
+    "Never guess an email. Leave email null until the person's real Azure DevOps / work email is confirmed.",
+    "role is the application's authorization role (GENERAL_MANAGER, PROJECT_MANAGER, TEAM_LEAD, DEVELOPER, QA); jobTitle is what the person does and is what the UI shows. Today no endpoint grants extra permissions by role: role only picks the default desk area and the fallback Team panel group. Business Analysis and Design therefore use DEVELOPER (the least privileged role, desks in the shared Development area) until a real permission need appears.",
+    "deskId is optional: without it the first free desk in the role's area is assigned on first sign-in."
+  ],
+  "seeded": ["Mohamed Osama"],
+  "members": [
+    { "email": null, "displayName": "Ahmed Kamal Shoukry", "role": "GENERAL_MANAGER", "jobTitle": "iSaned Manager", "team": "Management", "deskId": "desk-gm-01" },
+    { "email": null, "displayName": "Mariam Waheed", "role": "PROJECT_MANAGER", "jobTitle": "Project Manager", "team": "Project Management", "deskId": "desk-pm-01" },
+    { "email": null, "displayName": "Mohamed Osama", "role": "TEAM_LEAD", "jobTitle": "Developer / Team Lead", "team": "Development", "discipline": "Software Development", "deskId": "desk-tl-01" },
+    { "email": null, "displayName": "Momen Ahmed", "role": "DEVELOPER", "jobTitle": "Developer", "team": "Development" },
+    { "email": null, "displayName": "Rahma Mohamed", "role": "DEVELOPER", "jobTitle": "Developer", "team": "Development" },
+    { "email": null, "displayName": "Sara Ali", "role": "DEVELOPER", "jobTitle": "Developer", "team": "Development" },
+    { "email": null, "displayName": "Mahmoud El Wakeel", "role": "DEVELOPER", "jobTitle": "Developer", "team": "Development" },
+    { "email": null, "displayName": "Diaa Elgendy", "role": "DEVELOPER", "jobTitle": "Mobile Flutter Developer", "team": "Mobile Development", "discipline": "Flutter / Mobile Development" },
+    { "email": null, "displayName": "Hagar Mohamed", "role": "QA", "jobTitle": "QA Engineer", "team": "QA" },
+    { "email": null, "displayName": "Kareem Hatem", "role": "QA", "jobTitle": "QA Engineer", "team": "QA" },
+    { "email": null, "displayName": "Mohamed Soliman", "role": "DEVELOPER", "jobTitle": "Business Analyst", "team": "Business Analysis" },
+    { "email": null, "displayName": "Ahmed Abdelhamid", "role": "DEVELOPER", "jobTitle": "UX/UI Designer", "team": "Design", "discipline": "UX/UI Design" }
+  ]
+}

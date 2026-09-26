@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ActivitySource, UUID } from '@virtual-office/shared';
+import { employeeTitleWithTeam, type ActivitySource, type UUID } from '@virtual-office/shared';
 import { Crosshair, Footprints, MapPin, Monitor, ShieldCheck, Video } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -17,7 +17,6 @@ import { formatRelativeTime, formatTimeRange } from '@/shared/utils/format';
 import { useAuthStore } from '@/stores/auth.store';
 import { useEmployeeStore } from '@/stores/employee.store';
 import { useMeetingStore } from '@/stores/meeting.store';
-import { useOfficeStore } from '@/stores/office.store';
 import { useRoomStore } from '@/stores/room.store';
 import { useUiStore } from '@/stores/ui.store';
 import { useWorkStore } from '@/stores/work.store';
@@ -28,7 +27,6 @@ const props = defineProps<{ employeeId: UUID }>();
 const emit = defineEmits<{ close: [] }>();
 
 const employeeStore = useEmployeeStore();
-const officeStore = useOfficeStore();
 const roomStore = useRoomStore();
 const workStore = useWorkStore();
 const meetingStore = useMeetingStore();
@@ -89,7 +87,7 @@ function walkToEmployee(): void {
             {{ employee.displayName }}
             <span v-if="isMe" class="ml-1 rounded bg-accent/15 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent">You</span>
           </h2>
-          <p class="truncate text-xs text-muted">{{ employee.jobTitle }} · {{ officeStore.teamName(employee.teamId) }}</p>
+          <p class="truncate text-xs text-muted" :title="employee.discipline ?? undefined">{{ employeeTitleWithTeam(employee) }}</p>
         </div>
       </div>
     </template>

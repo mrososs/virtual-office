@@ -3,74 +3,33 @@
  * simulation script and debugging far easier than random UUIDs; they are
  * still plain strings, so they satisfy the shared `UUID` alias.
  */
-export const DEMO_ORGANIZATION_ID = 'org-acme';
-export const DEMO_OFFICE_ID = 'office-acme-hq';
-export const DEMO_FLOOR_ID = 'floor-acme-hq-1';
+export const DEMO_ORGANIZATION_ID = 'org-demo';
+export const DEMO_OFFICE_ID = 'office-demo-hq';
+export const DEMO_FLOOR_ID = 'floor-demo-hq-1';
 
+/** The demo team: one General Manager, one Project Manager, one Team Lead, developers and QA. */
 export const EMP = {
+  karim: 'emp-karim',
+  mariam: 'emp-mariam',
   mohamed: 'emp-mohamed',
   ahmed: 'emp-ahmed',
-  sara: 'emp-sara',
-  omar: 'emp-omar',
   rana: 'emp-rana',
   youssef: 'emp-youssef',
-  mariam: 'emp-mariam',
-  karim: 'emp-karim',
+  omar: 'emp-omar',
+  tamer: 'emp-tamer',
+  sara: 'emp-sara',
   nour: 'emp-nour',
   ali: 'emp-ali',
-  hana: 'emp-hana',
-  tamer: 'emp-tamer',
 } as const;
 
-export const TEAM = {
-  frontend: 'team-frontend',
-  backend: 'team-backend',
-  mobile: 'team-mobile',
-  design: 'team-design',
-  quality: 'team-quality',
-  platform: 'team-platform',
-  product: 'team-product',
-  leadership: 'team-leadership',
-} as const;
-
-export const ROOM = {
-  manager: 'room-manager',
-  meeting1: 'room-meeting-1',
-  meeting2: 'room-meeting-2',
-  focus: 'room-focus',
-  codeReview: 'room-code-review',
-  game: 'room-game',
-  development: 'room-development',
-  design: 'room-design',
-  qa: 'room-qa',
-  lounge: 'room-lounge',
-  reception: 'room-reception',
-} as const;
-
-export const DESK = {
-  dev01: 'desk-dev-01',
-  dev02: 'desk-dev-02',
-  dev03: 'desk-dev-03',
-  dev04: 'desk-dev-04',
-  dev05: 'desk-dev-05',
-  dev06: 'desk-dev-06',
-  dev07: 'desk-dev-07',
-  dev08: 'desk-dev-08',
-  des01: 'desk-des-01',
-  des02: 'desk-des-02',
-  des03: 'desk-des-03',
-  des04: 'desk-des-04',
-  qa01: 'desk-qa-01',
-  qa02: 'desk-qa-02',
-  qa03: 'desk-qa-03',
-  mgr01: 'desk-mgr-01',
-} as const;
+/** Rooms and desks are the one physical HQ floor, shared with production and the backend. */
+export { HQ_DESK as DESK, HQ_ROOM as ROOM } from '@virtual-office/shared';
 
 export const MEETING = {
-  frontendDaily: 'mtg-frontend-daily',
-  designReview: 'mtg-design-review',
+  teamDaily: 'mtg-team-daily',
+  releaseReview: 'mtg-release-review',
   sprintPlanning: 'mtg-sprint-planning',
-  backendSync: 'mtg-backend-sync',
+  apiSync: 'mtg-api-sync',
 } as const;
 
 export const WORK_ITEM = {
@@ -98,6 +57,11 @@ export const BUILD = {
   backendCi: 'build-246',
   frontendCiNext: 'build-247',
 } as const;
+
+/** Demo addresses use the reserved example.com domain, so they can never reach a real mailbox. */
+export function demoEmailFor(displayName: string): string {
+  return `${displayName.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+}
 
 /** Maps friendly `?demoUser=` values (first names) to employee ids. */
 export const DEMO_IDENTITY_ALIASES: Record<string, string> = Object.fromEntries(

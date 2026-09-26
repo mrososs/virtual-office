@@ -1,29 +1,24 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
+import { AvatarsModule } from '../avatars/avatars.module';
+import { AzureDevOpsModule } from '../azure-devops/azure-devops.module';
+import { EmployeesModule } from '../employees/employees.module';
+import { EntraModule } from '../entra/entra.module';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { AppConfig } from '../../config/configuration';
+import { AzurePatAuthController } from './azure-pat-auth.controller';
+import { MicrosoftEntraAuthController } from './microsoft-entra-auth.controller';
+import { AzurePatAuthProvider } from './providers/azure-pat-auth.provider';
+import { MicrosoftEntraAuthProvider } from './providers/microsoft-entra-auth.provider';
+import { SignInService } from './sign-in.service';
 
+/**
+ * Sign-in for pre-approved employees → application session. One provider is
+ * active (AUTH_PROVIDER): `azure_pat` today, `microsoft_entra` once IT approves
+ * an app registration. Both hand an approved employee to `SignInService`;
+ * nothing after that point knows which provider was used.
+ */
 @Module({
-  imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const { auth } = configService.get<AppConfig>('app')!;
-        return {
-          secret: auth.jwtSecret || 'dev-secret-do-not-use-in-production',
-          signOptions: { expiresIn: auth.jwtExpiresIn },
-        };
-      },
-    }),
-  ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  imports: [EntraModule, EmployeesModule, AvatarsModule, AzureDevOpsModule],
+  controllers: [AuthController, AzurePatAuthController, MicrosoftEntraAuthController],
+  providers: [SignInService, AzurePatAuthProvider, MicrosoftEntraAuthProvider],
 })
 export class AuthModule {}

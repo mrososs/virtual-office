@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 
 import AppProviders from '@/app/providers/AppProviders.vue';
 import { resolveLayout } from '@/app/layouts/resolveLayout';
+import PwaHost from '@/features/pwa/components/PwaHost.vue';
 
 const route = useRoute();
 const layout = computed(() => resolveLayout(route.meta.layout));
@@ -12,5 +13,6 @@ const layout = computed(() => resolveLayout(route.meta.layout));
 <template>
   <AppProviders>
     <component :is="layout" />
+    <PwaHost />
   </AppProviders>
 </template>

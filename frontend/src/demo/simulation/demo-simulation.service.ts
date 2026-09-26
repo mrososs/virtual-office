@@ -202,7 +202,7 @@ class DemoSimulationService {
 
   private triggerTemporaryActivity(type: ActivityType, activity: Omit<DemoActivity, 'type'>, durationSeconds: number): string {
     const employeeStore = useEmployeeStore();
-    const [employeeId] = this.candidates(['WORKING', 'CODING', 'AVAILABLE', 'BUILDING']);
+    const [employeeId] = this.candidates(['WORKING', 'CODING', 'TESTING', 'AVAILABLE', 'BUILDING']);
     if (!employeeId) return 'Everyone is busy right now — try again in a moment.';
     const employee = employeeStore.byId(employeeId);
     if (!employee) return 'Nobody available.';
@@ -213,7 +213,7 @@ class DemoSimulationService {
         employeeStore.setActivity(employeeId, { ...previous.activity, updatedAt: new Date().toISOString() }, previous.meeting);
       }
     });
-    return `${employee.displayName} → ${type === 'BREAK' ? 'Game room / lounge' : 'Code Review'}`;
+    return `${employee.displayName} → ${type === 'BREAK' ? 'Break room' : 'Collaboration Area'}`;
   }
 
   private triggerMeeting(): string {

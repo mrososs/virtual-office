@@ -1,0 +1,14 @@
+# Vercel only builds the SPA. Deploys use `vercel build` + `vercel deploy --prebuilt`
+# (only the built output is uploaded); this file guards a plain `vercel deploy`
+# (source upload), which does NOT honor .gitignore: never ship secrets or the API.
+**/.env
+**/.env.*
+!**/.env.example
+backend/src
+backend/scripts
+backend/seed
+supabase
+docs
+screen shot
+**/node_modules
+**/dist

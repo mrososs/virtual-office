@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UUID } from '@virtual-office/shared';
+import { employeeTitleWithTeam, type UUID } from '@virtual-office/shared';
 import { Footprints, Monitor, UserRound } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -67,7 +67,7 @@ const state = computed(() => {
           <EmployeeAvatar :employee="owner" size="md" />
           <span class="min-w-0 flex-1">
             <span class="block truncate text-[13px] font-medium text-ink">{{ owner.displayName }}</span>
-            <span class="block truncate text-2xs text-muted">{{ owner.jobTitle }}</span>
+            <span class="block truncate text-2xs text-muted">{{ employeeTitleWithTeam(owner) }}</span>
             <EmployeeStatus :employee="owner" class="mt-0.5" />
           </span>
         </button>

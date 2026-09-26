@@ -3,10 +3,10 @@ import { AzureWebhookService } from './azure-webhook.service';
 import { AzureServiceHookEvent } from '../azure-devops/azure.types';
 
 /**
- * Receives Azure DevOps Service Hooks HTTP callbacks. Intentionally not
- * behind `JwtAuthGuard` — Azure DevOps authenticates via a shared secret in
- * the webhook subscription URL / signature header instead (verified inside
- * `AzureWebhookService.handleEvent`), not a platform user JWT.
+ * Receives Azure DevOps Service Hooks HTTP callbacks — the *future* push path
+ * (Phase 1 uses the scheduled sync in `azure-devops/`). Not behind the session
+ * guard: Azure DevOps authenticates with Basic auth whose password is
+ * AZURE_DEVOPS_WEBHOOK_SECRET. Without that secret the endpoint is disabled.
  */
 @Controller('webhooks/azure-devops')
 export class AzureWebhookController {
@@ -14,11 +14,9 @@ export class AzureWebhookController {
 
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
-  async receive(
-    @Body() event: AzureServiceHookEvent,
-    @Headers('x-hub-signature') signature?: string,
-  ): Promise<{ received: true }> {
-    await this.azureWebhookService.handleEvent(event, signature);
+  async receive(@Body() event: AzureServiceHookEvent, @Headers('authorization') authorization?: string): Promise<{ received: true }> {
+    this.azureWebhookService.authorize(authorization);
+    await this.azureWebhookService.handleEvent(event);
     return { received: true };
   }
 }

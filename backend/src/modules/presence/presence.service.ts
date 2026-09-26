@@ -1,52 +1,57 @@
-import { Injectable, Logger } from '@nestjs/common';
-import type { EmployeePresence, PresenceStatus, UUID } from '@virtual-office/shared';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import type { EmployeePresence, UUID } from '@virtual-office/shared';
 import { SupabaseService } from '../../common/supabase/supabase.service';
+import { PresenceRepository, type PresenceRow } from './presence.repository';
+
+const OFFLINE: EmployeePresence = { status: 'OFFLINE', lastSeenAt: null, connectedSocketId: null };
 
 /**
- * Tracks `EmployeePresence` — connection state only ("is this person's
- * client online right now"). This is intentionally isolated from the
- * Activity Engine (`modules/activities`): presence flips ONLINE/AWAY/OFFLINE
- * purely from websocket connect/disconnect/heartbeat events, never from
- * Azure DevOps or Microsoft Teams signals. Do not import ActivityEngine
- * here, and do not let activity data set `PresenceStatus`.
+ * Tracks `EmployeePresence` — "connected to the Virtual Office" only. It
+ * flips purely from office socket joins/leaves (counted per socket, so a
+ * second tab or device keeps someone online when the first closes), never
+ * from Microsoft sign-in state, Azure DevOps or Teams. Do not import
+ * ActivityEngine here, and do not let activity data set `PresenceStatus`.
  */
 @Injectable()
-export class PresenceService {
+export class PresenceService implements OnApplicationBootstrap {
   private readonly logger = new Logger(PresenceService.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly repository: PresenceRepository,
+    private readonly supabase: SupabaseService,
+  ) {}
 
-  async getPresence(employeeId: UUID): Promise<EmployeePresence | null> {
-    // TODO: read cached/DB presence row for the employee.
-    void employeeId;
-    return null;
+  /** Single backend instance: after a restart no socket can still be connected. */
+  async onApplicationBootstrap(): Promise<void> {
+    if (!this.supabase.isConfigured()) return;
+    try {
+      await this.repository.resetAll();
+    } catch (error) {
+      this.logger.warn(`Could not reset presence on boot: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
-  async handleConnect(employeeId: UUID, socketId: string): Promise<EmployeePresence> {
-    // TODO: upsert presence to ONLINE, store `socketId`, broadcast
-    // SOCKET_EVENTS.EMPLOYEE_PRESENCE_CHANGED via RealtimeModule.
-    this.logger.debug(`Employee ${employeeId} connected on socket ${socketId}`);
-    return this.buildPresence('ONLINE');
+  /** One more connection for the employee; returns the resulting presence. */
+  async connect(employeeId: UUID): Promise<EmployeePresence> {
+    return toPresence(await this.repository.connect(employeeId));
   }
 
-  async handleDisconnect(employeeId: UUID, socketId: string): Promise<EmployeePresence> {
-    // TODO: only flip to OFFLINE if `socketId` matches the currently tracked
-    // connection (an employee may have multiple tabs/devices open).
-    this.logger.debug(`Employee ${employeeId} disconnected socket ${socketId}`);
-    return this.buildPresence('OFFLINE');
+  /** One connection fewer; they stay ONLINE while any other tab/device is connected. */
+  async disconnect(employeeId: UUID): Promise<EmployeePresence> {
+    return toPresence(await this.repository.disconnect(employeeId));
   }
 
-  async setManualStatus(employeeId: UUID, status: PresenceStatus): Promise<EmployeePresence> {
-    // TODO: allow an explicit "set myself AWAY" override from the client.
-    void employeeId;
-    return this.buildPresence(status);
+  async listAll(): Promise<Map<UUID, EmployeePresence>> {
+    const rows = await this.repository.listAll();
+    return new Map(rows.filter((row) => row.employee_id).map((row) => [row.employee_id as string, toPresence(row)]));
   }
 
-  private buildPresence(status: PresenceStatus): EmployeePresence {
-    return {
-      status,
-      lastSeenAt: new Date().toISOString(),
-      connectedSocketId: null,
-    };
+  offline(): EmployeePresence {
+    return { ...OFFLINE };
   }
+}
+
+function toPresence(row: PresenceRow | null): EmployeePresence {
+  if (!row) return { ...OFFLINE };
+  return { status: row.online ? 'ONLINE' : 'OFFLINE', lastSeenAt: row.last_seen_at, connectedSocketId: null };
 }

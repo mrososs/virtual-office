@@ -1,21 +1,23 @@
 import type {
+  AvatarProfile,
   Build,
   Desk,
   Employee,
   Meeting,
   Office,
   OfficeFloor,
+  OfficeStateResponse,
   PullRequest,
   Room,
   Sprint,
-  Team,
-  UUID,
   WorkItem,
 } from '@virtual-office/shared';
 
+import { ApiError, httpClient } from '@/core/api';
 import type { FeedItem } from '@/features/activity/activity-feed.types';
 import type { OfficeMapDefinition } from '@/game/maps/office-map.types';
-import type { AvatarAppearance } from '@/shared/utils/avatar-appearance';
+
+import { composeOfficeSnapshot } from './compose-office-snapshot';
 
 /** Everything the office experience needs to render one floor. */
 export interface OfficeSnapshot {
@@ -25,9 +27,9 @@ export interface OfficeSnapshot {
   map: OfficeMapDefinition;
   rooms: Room[];
   desks: Desk[];
-  teams: Team[];
   employees: Employee[];
-  avatarAppearances: Record<UUID, Partial<AvatarAppearance>>;
+  /** Saved looks of everyone who has created an avatar (the rest render with the default look). */
+  avatarProfiles: AvatarProfile[];
   meetings: Meeting[];
   workItems: WorkItem[];
   pullRequests: PullRequest[];
@@ -41,11 +43,17 @@ export interface OfficeDataSource {
   load(): Promise<OfficeSnapshot>;
 }
 
+/** Production: the signed-in team from Supabase (members, presence, activity, avatars, synced Azure DevOps work). */
 const apiOfficeDataSource: OfficeDataSource = {
   kind: 'api',
   async load() {
-    // TODO: compose from /api/offices, /api/employees, /api/meetings once those modules are backed by Supabase.
-    throw new Error('The office API is not available yet. Start the frontend with VITE_DEMO_MODE=true to explore the demo office.');
+    try {
+      return composeOfficeSnapshot(await httpClient.get<OfficeStateResponse>('/office/state'));
+    } catch (error) {
+      if (error instanceof ApiError && error.isNetworkError) throw new Error("Can't reach the Virtual Office server. Check your connection and retry.");
+      if (error instanceof ApiError && error.status === 503) throw new Error('The Virtual Office is temporarily unavailable. Try again shortly.');
+      throw error;
+    }
   },
 };
 

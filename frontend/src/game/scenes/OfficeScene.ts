@@ -1,6 +1,7 @@
-import type { UUID } from '@virtual-office/shared';
+import { avatarColorHex, type AvatarProfile, type UUID } from '@virtual-office/shared';
 import Phaser from 'phaser';
 
+import { AvatarFactory } from '@/game/avatars/AvatarFactory';
 import {
   GAME_EVENTS,
   gameBridge,
@@ -22,6 +23,7 @@ import { PlayerManager } from '@/game/managers/PlayerManager';
 import { RoomManager } from '@/game/managers/RoomManager';
 import type { NavigationTarget } from '@/game/navigation/NavigationTarget';
 import { PathFinder } from '@/game/navigation/PathFinder';
+import { AvatarSync } from '@/game/network/AvatarSync';
 import { OfficeSocket } from '@/game/network/OfficeSocket';
 import { PlayerSync } from '@/game/network/PlayerSync';
 import { PresenceSync } from '@/game/network/PresenceSync';
@@ -37,6 +39,9 @@ import { hexToNumber } from '@/shared/constants/activity-meta';
 
 interface OfficeWorld {
   localEmployeeId: UUID;
+  /** Latest saved look of the local player, announced on (re)join. */
+  localAvatar: AvatarProfile | null;
+  avatars: AvatarFactory;
   map: OfficeMapManager;
   rooms: RoomManager;
   meetings: MeetingRoomManager;
@@ -50,7 +55,7 @@ interface OfficeWorld {
   animation: AnimationSystem;
   roomSystem: RoomSystem;
   presence: PresenceSystem;
-  realtime: { socket: OfficeSocket; playerSync: PlayerSync; presenceSync: PresenceSync } | null;
+  realtime: { socket: OfficeSocket; playerSync: PlayerSync; presenceSync: PresenceSync; avatarSync: AvatarSync } | null;
 }
 
 type KeyName = 'w' | 'a' | 's' | 'd' | 'up' | 'down' | 'left' | 'right';
@@ -92,7 +97,7 @@ export class OfficeScene extends Phaser.Scene {
 
       // Materialized: several systems iterate it this frame.
       const avatars = [...this.allAvatars(world)];
-      world.animation.update(avatars);
+      world.animation.update(avatars, delta);
       world.roomSystem.update(delta, avatars);
       world.desks.update(delta, (id) => this.findAvatar(world, id), (id) => world.presence.statusOf(id));
       world.meetings.update(delta);
@@ -128,6 +133,16 @@ export class OfficeScene extends Phaser.Scene {
         world.meetings.applyAll(payload.roomMeetings);
       },
       [GAME_EVENTS.SET_EMPLOYEE_STATUS]: (view) => this.world?.presence.apply(view),
+      [GAME_EVENTS.SET_EMPLOYEE_APPEARANCE]: ({ employeeId, appearance, profile }) => {
+        const world = this.world;
+        if (!world) return;
+        this.findAvatar(world, employeeId)?.setAppearance(appearance);
+        world.desks.setOwnerAccent(employeeId, hexToNumber(avatarColorHex('topColor', appearance.topColor)));
+        if (employeeId === world.localEmployeeId && profile) {
+          world.localAvatar = profile;
+          world.realtime?.avatarSync.publish(profile);
+        }
+      },
       [GAME_EVENTS.MOVE_EMPLOYEE]: ({ employeeId, placement }) => {
         const world = this.world;
         if (world && employeeId !== world.localEmployeeId) world.employees.applyPlacement(employeeId, placement, false);
@@ -178,6 +193,7 @@ export class OfficeScene extends Phaser.Scene {
     collision.registerBlockers(map.blockers);
     const autoMovement = new AutoMovementSystem(this, new PathFinder(map.grid), movement);
     const interaction = new InteractionSystem(this);
+    const avatars = new AvatarFactory(this);
 
     const rooms = new RoomManager(this, map);
     const roomVisuals = rooms.load(payload.rooms);
@@ -189,7 +205,7 @@ export class OfficeScene extends Phaser.Scene {
       owners.set(state.status.employeeId, {
         employeeId: state.status.employeeId,
         displayName: state.status.displayName,
-        accent: hexToNumber(state.appearance.shirt),
+        accent: hexToNumber(avatarColorHex('topColor', state.appearance.topColor)),
       });
     }
     const desks = new DeskManager(this);
@@ -197,6 +213,7 @@ export class OfficeScene extends Phaser.Scene {
 
     let roomSystem: RoomSystem | null = null;
     const employees = new EmployeeManager(this, {
+      avatars,
       autoMovement,
       roomManager: rooms,
       deskManager: desks,
@@ -210,13 +227,15 @@ export class OfficeScene extends Phaser.Scene {
       if (employeeId === localEmployeeId && previousRoomId) rooms.releaseSpot(localEmployeeId);
     });
 
-    const players = new PlayerManager(this, movement, autoMovement);
+    const players = new PlayerManager(this, movement, autoMovement, avatars);
     const local = players.spawn(payload.localPlayer, payload.map.playerSpawn);
     interaction.registerEmployee(local);
     collision.attachPlayer(local.body);
 
     const world: OfficeWorld = {
       localEmployeeId,
+      localAvatar: payload.localAvatar,
+      avatars,
       map,
       rooms,
       meetings,
@@ -255,11 +274,19 @@ export class OfficeScene extends Phaser.Scene {
       controlMode: avatar.body.controlMode,
       navigating: world.autoMovement.isNavigating(avatar.employeeId),
       roomId: world.roomSystem.roomOf(avatar.employeeId),
+      look: avatar.body.appearanceKey,
     }));
+    const local = world.players.getLocalPlayer();
     const occupancy = Object.fromEntries(world.rooms.getRoomVisuals().map((room) => [room.roomId, world.roomSystem.occupantsOf(room.roomId)]));
     const camera = this.cameras.main;
     const dpr = this.scale.zoom > 0 ? 1 / this.scale.zoom : 1;
-    return { avatars, occupancy, camera: { x: camera.worldView.x, y: camera.worldView.y, scale: camera.zoom / dpr } };
+    return {
+      avatars,
+      occupancy,
+      camera: { x: camera.worldView.x, y: camera.worldView.y, scale: camera.zoom / dpr },
+      avatarTextures: world.avatars.textureCount,
+      localLayers: local ? local.body.debugLayers() : [],
+    };
   }
 
   private connectRealtime(world: OfficeWorld, officeId: UUID): OfficeWorld['realtime'] {
@@ -268,20 +295,27 @@ export class OfficeScene extends Phaser.Scene {
       onRemotePosition: (employeeId, position, direction) => world.employees.applyRemotePosition(employeeId, position, direction),
     });
     const presenceSync = new PresenceSync(socket, world.localEmployeeId, {
-      onJoined: (employeeId, position, direction) => world.employees.attachRemote(employeeId, position, direction),
+      onJoined: (employeeId, position, direction, avatar) => {
+        world.employees.attachRemote(employeeId, position, direction);
+        if (avatar) gameBridge.emit(GAME_EVENTS.REMOTE_AVATAR_RECEIVED, { employeeId, avatar });
+      },
       onLeft: (employeeId) => world.employees.detachRemote(employeeId),
       onLiveEmployeesChanged: (employeeIds) => gameBridge.emit(GAME_EVENTS.LIVE_EMPLOYEES_CHANGED, { employeeIds }),
+    });
+    const avatarSync = new AvatarSync(socket, world.localEmployeeId, {
+      onRemoteAvatar: (employeeId, avatar) => gameBridge.emit(GAME_EVENTS.REMOTE_AVATAR_RECEIVED, { employeeId, avatar }),
     });
     socket.connect(
       () => {
         const local = world.players.getLocalPlayer();
-        if (local) playerSync.join(officeId, local.position, local.body.direction);
+        if (local) playerSync.join(officeId, local.position, local.body.direction, world.localAvatar);
       },
       () => presenceSync.clear(),
     );
     playerSync.start();
     presenceSync.start();
-    return { socket, playerSync, presenceSync };
+    avatarSync.start();
+    return { socket, playerSync, presenceSync, avatarSync };
   }
 
   private navigateLocalPlayer(request: NavigationRequest, label: string): void {
@@ -362,6 +396,7 @@ export class OfficeScene extends Phaser.Scene {
     if (world.realtime) {
       world.realtime.playerSync.stop();
       world.realtime.presenceSync.stop();
+      world.realtime.avatarSync.stop();
       world.realtime.socket.disconnect();
     }
     world.camera.destroy();
@@ -371,6 +406,7 @@ export class OfficeScene extends Phaser.Scene {
     world.rooms.clear();
     world.map.destroy();
     world.collision.destroy();
+    world.avatars.destroy();
   }
 
   private teardown(): void {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PresenceRepository } from './presence.repository';
 import { PresenceService } from './presence.service';
 
 /**
@@ -7,7 +8,7 @@ import { PresenceService } from './presence.service';
  * separate modules with no cross-dependency in either direction.
  */
 @Module({
-  providers: [PresenceService],
+  providers: [PresenceRepository, PresenceService],
   exports: [PresenceService],
 })
 export class PresenceModule {}

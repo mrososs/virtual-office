@@ -6,7 +6,7 @@ import { BUILD, DEMO_ORGANIZATION_ID, EMP, PULL_REQUEST, WORK_ITEM } from './dem
  * Azure DevOps data as it would look after the azure-devops adapters mapped
  * REST/Service Hook payloads into internal models. No real API calls.
  */
-const PROJECT = 'Acme Platform';
+const PROJECT = 'Core Platform';
 
 interface WorkItemSeed {
   id: UUID;
@@ -21,12 +21,12 @@ const WORK_ITEM_SEEDS: WorkItemSeed[] = [
   { id: WORK_ITEM.dashboardFilters, type: 'TASK', title: 'Dashboard filters for sprint health', state: 'ACTIVE', assignee: EMP.ahmed },
   { id: WORK_ITEM.pipelineCaching, type: 'TASK', title: 'Cache pipeline dependencies', state: 'NEW', assignee: EMP.youssef },
   { id: WORK_ITEM.iosPush, type: 'BUG', title: 'iOS push notifications drop after token refresh', state: 'BLOCKED', assignee: EMP.tamer },
-  { id: WORK_ITEM.regressionSuite, type: 'TASK', title: 'Regression suite: organization settings', state: 'ACTIVE', assignee: EMP.hana },
-  { id: WORK_ITEM.onboardingFlow, type: 'USER_STORY', title: 'Onboarding flow redesign', state: 'ACTIVE', assignee: EMP.sara },
+  { id: WORK_ITEM.regressionSuite, type: 'TASK', title: 'Regression suite: organization settings', state: 'ACTIVE', assignee: EMP.nour },
+  { id: WORK_ITEM.onboardingFlow, type: 'TASK', title: 'Test onboarding flow redesign', state: 'ACTIVE', assignee: EMP.ali },
   { id: WORK_ITEM.tenantSettings, type: 'TASK', title: 'Tenant settings API', state: 'IN_REVIEW', assignee: EMP.youssef },
-  { id: WORK_ITEM.designTokens, type: 'FEATURE', title: 'Design tokens v2', state: 'ACTIVE', assignee: EMP.nour },
+  { id: WORK_ITEM.designTokens, type: 'FEATURE', title: 'Design tokens v2', state: 'ACTIVE', assignee: EMP.omar },
   { id: WORK_ITEM.releaseNotes, type: 'TASK', title: 'Release notes 2.4', state: 'NEW', assignee: EMP.mariam },
-  { id: WORK_ITEM.testPlan, type: 'TASK', title: 'Test plan: feature permissions', state: 'ACTIVE', assignee: EMP.omar },
+  { id: WORK_ITEM.testPlan, type: 'TASK', title: 'Test plan: feature permissions', state: 'ACTIVE', assignee: EMP.sara },
   { id: WORK_ITEM.datePicker, type: 'TASK', title: 'Accessible date picker', state: 'ACTIVE', assignee: EMP.rana },
 ];
 
@@ -59,7 +59,7 @@ export function createDemoPullRequests(now: number): PullRequest[] {
       provider: 'AZURE_DEVOPS',
       externalId: '493',
       title: 'Fix feature permission mapping',
-      repository: 'acme-web',
+      repository: 'web-app',
       sourceBranch: 'feature/16178-org-permissions',
       targetBranch: 'main',
       status: 'ACTIVE',
@@ -75,12 +75,12 @@ export function createDemoPullRequests(now: number): PullRequest[] {
       provider: 'AZURE_DEVOPS',
       externalId: '498',
       title: 'Tenant settings API',
-      repository: 'acme-api',
+      repository: 'api',
       sourceBranch: 'feature/16184-tenant-settings',
       targetBranch: 'main',
       status: 'DRAFT',
       authorEmployeeId: EMP.youssef,
-      reviewerEmployeeIds: [EMP.karim, EMP.ahmed],
+      reviewerEmployeeIds: [EMP.omar, EMP.ahmed],
       linkedWorkItemId: WORK_ITEM.tenantSettings,
       url: null,
       updatedAt: iso(40),
@@ -91,7 +91,7 @@ export function createDemoPullRequests(now: number): PullRequest[] {
       provider: 'AZURE_DEVOPS',
       externalId: '501',
       title: 'Sprint health dashboard filters',
-      repository: 'acme-web',
+      repository: 'web-app',
       sourceBranch: 'feature/16192-dashboard-filters',
       targetBranch: 'main',
       status: 'ACTIVE',

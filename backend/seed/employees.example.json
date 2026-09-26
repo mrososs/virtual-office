@@ -1,0 +1,8 @@
+[
+  { "email": "general.manager@example.com", "displayName": "Example General Manager", "role": "GENERAL_MANAGER", "jobTitle": "General Manager", "team": "Management", "deskId": "desk-gm-01" },
+  { "email": "project.manager@example.com", "displayName": "Example Project Manager", "role": "PROJECT_MANAGER", "jobTitle": "Project Manager", "team": "Project Management", "deskId": "desk-pm-01" },
+  { "email": "team.lead@example.com", "displayName": "Example Team Lead", "role": "TEAM_LEAD", "jobTitle": "Developer / Team Lead", "team": "Development", "discipline": "Software Development", "deskId": "desk-tl-01" },
+  { "email": "developer.one@example.com", "displayName": "Example Developer", "role": "DEVELOPER", "jobTitle": "Developer", "team": "Development", "deskId": "desk-dev-01" },
+  { "email": "mobile.developer@example.com", "displayName": "Example Mobile Developer", "role": "DEVELOPER", "jobTitle": "Mobile Flutter Developer", "team": "Mobile Development", "discipline": "Flutter / Mobile Development" },
+  { "email": "qa.engineer@example.com", "displayName": "Example QA Engineer", "role": "QA", "jobTitle": "QA Engineer", "team": "QA", "deskId": "desk-qa-01" }
+]

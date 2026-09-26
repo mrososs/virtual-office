@@ -1,9 +1,15 @@
 # Demo mode
 
-Demo mode runs the full office experience with a seeded company (Acme
-Engineering — 12 people, 11 rooms, 16 desks, Teams meetings, Azure DevOps
-work items / PRs / builds) and a scripted timeline, **without** any real
-identity provider, database or third-party integration.
+Demo mode runs the full office experience with a seeded team (the company
+from `COMPANY_BRANDING` — 11 people, 11 rooms, 15 desks, Teams meetings,
+Azure DevOps work items / PRs / builds) and a scripted timeline, **without**
+any real identity provider, database or third-party integration.
+
+The team: Karim (General Manager), Mariam (Project Manager), Mohamed (Team
+Lead), Ahmed, Rana, Youssef, Omar and Tamer (Developers), Sara, Nour and Ali
+(QA). Desks are assigned by role (`assignDesksByRole`): GM office, PM
+office, Team Lead area, Development area, QA area. Everyone has a distinct
+seeded avatar — chosen per person, never per role.
 
 It is enabled **only by environment configuration**, separately on each side:
 
@@ -24,20 +30,40 @@ ships as separate chunks that a non-demo build never loads.
   `demoSessionService.start()`, which puts a demo identity into the auth store
   (`authStore.startDemoSession`). The router's `requiresAuth` guard is
   unchanged; it simply sees a signed-in (demo) user.
-- **Production auth is intact.** `AuthService.login`, `JwtStrategy`, and
-  `JwtAuthGuard` still protect every HTTP route. Demo tokens carry a
-  `demo: true` claim and are **rejected** (HTTP and sockets) by any backend
-  running without demo mode, even one that shares the signing secret.
-- **Realtime is still authenticated.** The Socket.IO gateway verifies a JWT on
-  every handshake (`auth.token`) in every mode. In demo mode the frontend
-  gets that token from `POST /api/demo/session`
-  (`{ employeeId, organizationId }` → a normal signed token with a
-  `demo: true` claim). Without `DEMO_MODE=true` on the backend, that
-  endpoint does not exist (the module isn't registered), so a demo frontend
-  runs the office locally with the realtime pill showing **Local only**. The
-  same happens when the backend is not running at all; the only console
-  entry is then the browser's own network error for the token request.
+- **Production auth is intact and separate.** Every HTTP route is protected
+  by `SessionAuthGuard` (the Microsoft-backed HttpOnly session cookie — see
+  [`MICROSOFT_AUTH_SETUP.md`](./MICROSOFT_AUTH_SETUP.md)). JWTs are never
+  accepted for HTTP at all. Demo identities (`emp-karim`, …) do not exist in
+  the database and never become sessions.
+- **Realtime is still authenticated.** In demo mode the frontend gets a demo
+  token from `POST /api/demo/session` (`{ employeeId, organizationId }` → a
+  signed token with a `demo: true` claim) and sends it in the Socket.IO
+  handshake (`auth.token`). `DemoTokenService` verifies it **only while demo
+  mode is on** (`DEMO_MODE=true` and `NODE_ENV≠production`), so a demo token
+  is rejected by any other backend, even one sharing `JWT_SECRET`. Demo
+  sockets never touch database presence or production broadcasts. Without
+  `DEMO_MODE=true` the endpoint does not exist, so a demo frontend runs the
+  office locally with the realtime pill showing **Local only**. The same
+  happens when the backend is not running at all.
 - The backend logs a warning at startup whenever the demo module is active.
+- **Same floor plan.** Demo and production render the same HQ floor
+  (`features/office/layout/hq-floor-plan.ts`); only the people and work data
+  differ.
+
+## Avatars in demo mode
+
+- Teammates render with their seeded looks (`DEMO_AVATAR_LOOKS` in
+  `employees.demo.ts`).
+- **Your** avatar only exists once you save it: the first time you open the
+  office as any demo identity in a browser, you land on `/profile/avatar` to create
+  it (starting from that person's seeded look). After saving, you go
+  straight to the office on every later visit.
+- Saved looks are kept in `localStorage` (`vo:demo-avatar-profiles:v1`) by
+  `demo/demo-avatar-profile.repository.ts` — demo-only; production uses the
+  `AvatarProfileRepository` API boundary. Clear that key to see first-time
+  setup again.
+- Edit your avatar any time: profile menu → **Edit avatar** (an overlay over
+  the running office). Connected teammates see the change live.
 
 ## Identities and multiplayer testing
 
@@ -51,16 +77,20 @@ Each browser tab picks its identity independently:
 
 Open two tabs with different identities to see each other move live. The
 other person's avatar switches from scripted (NPC) to live control while
-their tab is connected, and returns to the script when it closes.
+their tab is connected, and returns to the script when it closes. Their
+saved look arrives with their join, and later changes arrive live — try it
+from a private window, which shares no storage with the first one.
 
 ## The simulation
 
 `frontend/src/demo/simulation/demo-simulation.service.ts` plays the
 deterministic timeline from `frontend/src/demo/simulation.demo.ts` (about
-20 steps over ~160 s): the Frontend Daily Standup goes "starting soon" →
-attendees walk to Meeting Room 1 → live → ended; a design review; PR
-approvals and a code review; builds running and passing; coffee breaks;
-focus time; a blocked bug getting unblocked. It loops after a 20 s pause.
+18 steps over ~160 s): the Team Daily Standup goes "starting soon" →
+attendees walk to Meeting Room 1 → live → ended; the release readiness
+review (PM + QA) wraps up and QA goes back to testing at their desks; PR
+approvals and a code review in the collaboration area; builds running and
+passing; coffee breaks in the game room / kitchen; focus time at the desk; a
+blocked bug getting unblocked. It loops after a 20 s pause.
 Placement is never scripted by coordinates — the simulation only changes
 activity/meeting state, and `resolveActivityPlacement` (in `shared`) decides
 where each person should be.

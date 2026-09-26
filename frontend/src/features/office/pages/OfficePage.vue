@@ -13,15 +13,21 @@ import OfficeCanvas from '@/features/office/components/OfficeCanvas.vue';
 import OfficeErrorState from '@/features/office/components/OfficeErrorState.vue';
 import OfficeHud from '@/features/office/components/OfficeHud.vue';
 import OfficeLoadingOverlay from '@/features/office/components/OfficeLoadingOverlay.vue';
+import RealtimeDisconnectedBanner from '@/features/office/components/RealtimeDisconnectedBanner.vue';
 import ZoomControls from '@/features/office/components/ZoomControls.vue';
 import { useOfficeExperience } from '@/features/office/composables/useOfficeExperience';
 import { useOfficeHotkeys } from '@/features/office/composables/useOfficeHotkeys';
+import { useOfficeStore } from '@/stores/office.store';
 
 const { phase, errorMessage, canvasKey, retry } = useOfficeExperience();
 useOfficeHotkeys();
 
 const route = useRoute();
-const panelOpen = computed(() => route.name !== 'office');
+const officeStore = useOfficeStore();
+// Side panels shift the HUD; overlays (Edit avatar) cover the office instead.
+const panelOpen = computed(() => route.name !== 'office' && !route.meta.overlay);
+// Production realtime is required for a truthful picture; demo mode can run fully local.
+const showDisconnected = computed(() => !runtimeEnv.demoMode && officeStore.realtimeStatus === 'disconnected');
 </script>
 
 <template>
@@ -44,6 +50,7 @@ const panelOpen = computed(() => route.name !== 'office');
 
       <DetailsDrawerHost />
       <LocalNavigationPill class="absolute left-1/2 top-3 z-10 -translate-x-1/2" />
+      <RealtimeDisconnectedBanner v-if="showDisconnected" class="absolute left-1/2 top-14 z-20 -translate-x-1/2" />
       <InteractionPrompt class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2" />
       <ControlsHint class="absolute bottom-16 left-1/2 z-10 -translate-x-1/2" />
 

@@ -10,7 +10,7 @@ import type {
 } from '@virtual-office/shared';
 
 import { BUILD, EMP, MEETING, PULL_REQUEST, WORK_ITEM } from './demo.ids';
-import { FRONTEND_DAILY_STARTS_AT_S } from './meetings.demo';
+import { TEAM_DAILY_STARTS_AT_S } from './meetings.demo';
 
 /**
  * The demo is a deterministic script of *domain* mutations. It never touches
@@ -52,25 +52,25 @@ const act = (
 export const DEMO_TIMELINE: DemoTimelineStep[] = [
   {
     at: 8,
-    label: 'Frontend Daily is starting soon',
-    actions: [{ type: 'MEETING', meetingId: MEETING.frontendDaily, status: 'STARTING_SOON' }],
+    label: 'Team Daily is starting soon',
+    actions: [{ type: 'MEETING', meetingId: MEETING.teamDaily, status: 'STARTING_SOON' }],
   },
   {
     at: 12,
     label: 'Rana heads to Meeting Room 1',
-    actions: [act(EMP.rana, 'MEETING', { title: 'Frontend Daily Standup', meetingId: MEETING.frontendDaily })],
+    actions: [act(EMP.rana, 'MEETING', { title: 'Team Daily Standup', meetingId: MEETING.teamDaily })],
   },
   {
     at: 17,
     label: 'Ahmed heads to Meeting Room 1',
-    actions: [act(EMP.ahmed, 'MEETING', { title: 'Frontend Daily Standup', meetingId: MEETING.frontendDaily })],
+    actions: [act(EMP.ahmed, 'MEETING', { title: 'Team Daily Standup', meetingId: MEETING.teamDaily })],
   },
   {
-    at: FRONTEND_DAILY_STARTS_AT_S,
-    label: 'Frontend Daily is live',
+    at: TEAM_DAILY_STARTS_AT_S,
+    label: 'Team Daily is live',
     actions: [
-      { type: 'MEETING', meetingId: MEETING.frontendDaily, status: 'LIVE' },
-      act(EMP.mohamed, 'MEETING', { title: 'Frontend Daily Standup', meetingId: MEETING.frontendDaily }),
+      { type: 'MEETING', meetingId: MEETING.teamDaily, status: 'LIVE' },
+      act(EMP.mohamed, 'MEETING', { title: 'Team Daily Standup', meetingId: MEETING.teamDaily }),
     ],
   },
   {
@@ -84,15 +84,15 @@ export const DEMO_TIMELINE: DemoTimelineStep[] = [
   },
   {
     at: 58,
-    label: 'Nour joins Design Review',
-    actions: [act(EMP.nour, 'MEETING', { title: 'Design Review', meetingId: MEETING.designReview })],
+    label: 'Nour joins the release review',
+    actions: [act(EMP.nour, 'MEETING', { title: 'Release Readiness Review', meetingId: MEETING.releaseReview })],
   },
   {
     at: 70,
     label: 'Omar approves PR #493',
     actions: [
       { type: 'PULL_REQUEST', pullRequestId: PULL_REQUEST.permissionMapping, status: 'APPROVED' },
-      act(EMP.omar, 'WORKING', { title: 'Test plan: feature permissions', workItemId: WORK_ITEM.testPlan }),
+      act(EMP.omar, 'CODING', { title: 'Design tokens v2', workItemId: WORK_ITEM.designTokens }),
     ],
   },
   {
@@ -106,19 +106,19 @@ export const DEMO_TIMELINE: DemoTimelineStep[] = [
     actions: [
       { type: 'PULL_REQUEST', pullRequestId: PULL_REQUEST.tenantSettingsApi, status: 'ACTIVE' },
       { type: 'BUILD', buildId: BUILD.backendCi, status: 'RUNNING' },
-      act(EMP.karim, 'CODE_REVIEW', { title: 'Tenant settings API', pullRequestId: PULL_REQUEST.tenantSettingsApi }),
+      act(EMP.omar, 'CODE_REVIEW', { title: 'Tenant settings API', pullRequestId: PULL_REQUEST.tenantSettingsApi }),
     ],
   },
   {
     at: 96,
-    label: 'Hana takes a break',
-    actions: [act(EMP.hana, 'BREAK', { source: 'MANUAL', title: 'Snack break' })],
+    label: 'Karim grabs a coffee',
+    actions: [act(EMP.karim, 'BREAK', { source: 'MANUAL', title: 'Coffee break' })],
   },
   {
     at: 110,
-    label: 'Frontend Daily ends',
+    label: 'Team Daily ends',
     actions: [
-      { type: 'MEETING', meetingId: MEETING.frontendDaily, status: 'ENDED' },
+      { type: 'MEETING', meetingId: MEETING.teamDaily, status: 'ENDED' },
       act(EMP.rana, 'CODING', { title: 'Accessible date picker', workItemId: WORK_ITEM.datePicker }),
       act(EMP.ahmed, 'CODING', { title: 'Dashboard filters for sprint health', workItemId: WORK_ITEM.dashboardFilters }),
       act(EMP.mohamed, 'WORKING', { title: 'Fix organization feature permissions', workItemId: WORK_ITEM.orgPermissions }),
@@ -136,26 +136,26 @@ export const DEMO_TIMELINE: DemoTimelineStep[] = [
   },
   {
     at: 132,
-    label: 'Design Review wraps up',
+    label: 'Release review wraps up',
     actions: [
-      { type: 'MEETING', meetingId: MEETING.designReview, status: 'ENDED' },
-      act(EMP.sara, 'WORKING', { title: 'Onboarding flow redesign', workItemId: WORK_ITEM.onboardingFlow }),
-      act(EMP.nour, 'WORKING', { title: 'Design tokens v2', workItemId: WORK_ITEM.designTokens }),
+      { type: 'MEETING', meetingId: MEETING.releaseReview, status: 'ENDED' },
+      act(EMP.sara, 'TESTING', { title: 'Test plan: feature permissions', workItemId: WORK_ITEM.testPlan }),
+      act(EMP.nour, 'TESTING', { title: 'Regression suite: organization settings', workItemId: WORK_ITEM.regressionSuite }),
       act(EMP.mariam, 'AVAILABLE', { source: 'SYSTEM' }),
     ],
   },
   {
     at: 140,
-    label: 'Karim approves PR #498',
+    label: 'Omar approves PR #498',
     actions: [
       { type: 'PULL_REQUEST', pullRequestId: PULL_REQUEST.tenantSettingsApi, status: 'APPROVED' },
-      act(EMP.karim, 'AVAILABLE', { source: 'SYSTEM' }),
+      act(EMP.omar, 'CODING', { title: 'Design tokens v2', workItemId: WORK_ITEM.designTokens }),
     ],
   },
   {
     at: 147,
-    label: 'Hana is back',
-    actions: [act(EMP.hana, 'WORKING', { title: 'Regression suite: organization settings', workItemId: WORK_ITEM.regressionSuite })],
+    label: 'Karim is back',
+    actions: [act(EMP.karim, 'AVAILABLE', { source: 'SYSTEM' })],
   },
   {
     at: 153,

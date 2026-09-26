@@ -1,4 +1,4 @@
-import type { Office, OfficeFloor, Team, UUID } from '@virtual-office/shared';
+import type { Office, OfficeFloor } from '@virtual-office/shared';
 import { defineStore } from 'pinia';
 import { markRaw } from 'vue';
 
@@ -12,7 +12,6 @@ interface OfficeStoreState {
   organizationName: string;
   office: Office | null;
   floor: OfficeFloor | null;
-  teamsById: Record<UUID, Team>;
   /** Static layout handed to Phaser; kept raw so Vue never deep-proxies it. */
   map: OfficeMapDefinition | null;
   dataStatus: OfficeLoadStatus;
@@ -27,7 +26,6 @@ export const useOfficeStore = defineStore('office', {
     organizationName: '',
     office: null,
     floor: null,
-    teamsById: {},
     map: null,
     dataStatus: 'idle',
     dataError: null,
@@ -38,18 +36,13 @@ export const useOfficeStore = defineStore('office', {
 
   getters: {
     isReady: (state): boolean => state.dataStatus === 'ready' && state.gameStatus === 'ready',
-    teamName:
-      (state) =>
-      (teamId: UUID | null | undefined): string | null =>
-        (teamId && state.teamsById[teamId]?.name) || null,
   },
 
   actions: {
-    setOffice(payload: { organizationName: string; office: Office; floor: OfficeFloor; teams: Team[]; map: OfficeMapDefinition }): void {
+    setOffice(payload: { organizationName: string; office: Office; floor: OfficeFloor; map: OfficeMapDefinition }): void {
       this.organizationName = payload.organizationName;
       this.office = payload.office;
       this.floor = payload.floor;
-      this.teamsById = Object.fromEntries(payload.teams.map((team) => [team.id, team]));
       this.map = markRaw(payload.map);
     },
 

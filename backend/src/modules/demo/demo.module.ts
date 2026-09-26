@@ -1,6 +1,6 @@
 import { Logger, Module, OnModuleInit } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
 import { DemoSessionController } from './demo-session.controller';
+import { DemoTokenModule } from './demo-token.module';
 
 /**
  * Local-development demo identity support. Registered from AppModule via
@@ -8,7 +8,7 @@ import { DemoSessionController } from './demo-session.controller';
  * not exist unless DEMO_MODE=true and NODE_ENV is not production.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [DemoTokenModule],
   controllers: [DemoSessionController],
 })
 export class DemoModule implements OnModuleInit {

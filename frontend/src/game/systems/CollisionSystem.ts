@@ -22,8 +22,8 @@ export class CollisionSystem {
     this.group = group;
   }
 
-  attachPlayer(sprite: Phaser.GameObjects.Sprite): void {
-    if (this.group) this.scene.physics.add.collider(sprite, this.group);
+  attachPlayer(player: Phaser.GameObjects.GameObject): void {
+    if (this.group) this.scene.physics.add.collider(player, this.group);
   }
 
   destroy(): void {

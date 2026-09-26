@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-import { requireAuthGuard } from './guards';
+import { requireAuthGuard, requireAvatarGuard } from './guards';
 import { routes } from './routes';
 
 export const router = createRouter({
@@ -9,5 +9,6 @@ export const router = createRouter({
 });
 
 router.beforeEach(requireAuthGuard);
+router.beforeEach(requireAvatarGuard);
 
 export * from './routes';

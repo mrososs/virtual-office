@@ -1,41 +1,42 @@
-import type { ActivityType, Desk, Employee, EmployeeActivity, PresenceStatus, Team, UUID } from '@virtual-office/shared';
+import type {
+  ActivityType,
+  AvatarAppearance,
+  Desk,
+  Employee,
+  EmployeeActivity,
+  EmployeeRole,
+  PresenceStatus,
+  UUID,
+} from '@virtual-office/shared';
 
-import type { AvatarAppearance } from '@/shared/utils/avatar-appearance';
+import { BUILD, DEMO_ORGANIZATION_ID, EMP, MEETING, PULL_REQUEST, WORK_ITEM, demoEmailFor } from './demo.ids';
 
-import { BUILD, DEMO_ORGANIZATION_ID, EMP, MEETING, PULL_REQUEST, TEAM, WORK_ITEM } from './demo.ids';
-
-export const DEMO_TEAMS: Team[] = [
-  { id: TEAM.frontend, organizationId: DEMO_ORGANIZATION_ID, name: 'Frontend', managerEmployeeId: EMP.karim },
-  { id: TEAM.backend, organizationId: DEMO_ORGANIZATION_ID, name: 'Backend', managerEmployeeId: EMP.karim },
-  { id: TEAM.mobile, organizationId: DEMO_ORGANIZATION_ID, name: 'Mobile', managerEmployeeId: EMP.karim },
-  { id: TEAM.design, organizationId: DEMO_ORGANIZATION_ID, name: 'Design', managerEmployeeId: EMP.mariam },
-  { id: TEAM.quality, organizationId: DEMO_ORGANIZATION_ID, name: 'Quality', managerEmployeeId: EMP.karim },
-  { id: TEAM.platform, organizationId: DEMO_ORGANIZATION_ID, name: 'Platform', managerEmployeeId: EMP.karim },
-  { id: TEAM.product, organizationId: DEMO_ORGANIZATION_ID, name: 'Product', managerEmployeeId: null },
-  { id: TEAM.leadership, organizationId: DEMO_ORGANIZATION_ID, name: 'Engineering Leadership', managerEmployeeId: null },
-];
-
-/** Curated looks so the cast reads as distinct people at a glance. */
-export const DEMO_AVATAR_APPEARANCES: Record<UUID, Partial<AvatarAppearance>> = {
-  [EMP.mohamed]: { shirt: '#6366f1', hairStyle: 'SHORT', hair: '#1c1714', skin: '#d39a70', pants: '#1e293b' },
-  [EMP.ahmed]: { shirt: '#0ea5e9', hairStyle: 'BUZZ', hair: '#1c1714', skin: '#b97b52', pants: '#334155' },
-  [EMP.sara]: { shirt: '#ec4899', hairStyle: 'LONG', hair: '#3a2a20', skin: '#eab993', pants: '#1e3a5f' },
-  [EMP.omar]: { shirt: '#f97316', hairStyle: 'CURLY', hair: '#1c1714', skin: '#8e5a3a', pants: '#3f3f46' },
-  [EMP.rana]: { shirt: '#14b8a6', hairStyle: 'WRAP', hair: '#7c3aed', skin: '#eab993', pants: '#1e293b' },
-  [EMP.youssef]: { shirt: '#22c55e', hairStyle: 'SHORT', hair: '#5a3a22', skin: '#f6d2b8', pants: '#1e3a5f' },
-  [EMP.mariam]: { shirt: '#8b5cf6', hairStyle: 'BUN', hair: '#1c1714', skin: '#d39a70', pants: '#44403c' },
-  [EMP.karim]: { shirt: '#64748b', hairStyle: 'SHORT', hair: '#9aa1ab', skin: '#eab993', pants: '#1e293b' },
-  [EMP.nour]: { shirt: '#f59e0b', hairStyle: 'BOB', hair: '#8a5a2c', skin: '#f6d2b8', pants: '#334155' },
-  [EMP.ali]: { shirt: '#e11d48', hairStyle: 'CURLY', hair: '#1c1714', skin: '#65402a', pants: '#3f3f46' },
-  [EMP.hana]: { shirt: '#10b981', hairStyle: 'WRAP', hair: '#1e3a5f', skin: '#b97b52', pants: '#44403c' },
-  [EMP.tamer]: { shirt: '#3b82f6', hairStyle: 'BUZZ', hair: '#3a2a20', skin: '#8e5a3a', pants: '#1e293b' },
+/**
+ * Each teammate's saved look. Chosen per person, never per role — the
+ * General Manager customizes with exactly the same options as a developer.
+ * These stand in for avatars people already created; the signed-in demo
+ * user still goes through the avatar creator on their first visit.
+ */
+export const DEMO_AVATAR_LOOKS: Readonly<Record<UUID, AvatarAppearance>> = {
+  [EMP.karim]: { bodyType: 'body-broad', skinTone: 'skin-03', hairStyle: 'hair-short', hairColor: 'silver', topStyle: 'top-sweater', topColor: 'slate', bottomStyle: 'bottom-pants', bottomColor: 'charcoal', shoesStyle: 'shoes-classic', accessory: 'acc-glasses-square' },
+  [EMP.mariam]: { bodyType: 'body-slim', skinTone: 'skin-04', hairStyle: 'hair-wrap', hairColor: 'plum', topStyle: 'top-blazer', topColor: 'violet', bottomStyle: 'bottom-skirt', bottomColor: 'charcoal', shoesStyle: 'shoes-classic', accessory: 'acc-lanyard' },
+  [EMP.mohamed]: { bodyType: 'body-regular', skinTone: 'skin-04', hairStyle: 'hair-short', hairColor: 'black', topStyle: 'top-tshirt', topColor: 'indigo', bottomStyle: 'bottom-jeans', bottomColor: 'denim', shoesStyle: 'shoes-sneakers', accessory: null },
+  [EMP.ahmed]: { bodyType: 'body-regular', skinTone: 'skin-05', hairStyle: 'hair-buzz', hairColor: 'black', topStyle: 'top-hoodie', topColor: 'sky', bottomStyle: 'bottom-joggers', bottomColor: 'black', shoesStyle: 'shoes-sneakers', accessory: 'acc-headphones' },
+  [EMP.rana]: { bodyType: 'body-slim', skinTone: 'skin-02', hairStyle: 'hair-long', hairColor: 'auburn', topStyle: 'top-shirt', topColor: 'teal', bottomStyle: 'bottom-jeans', bottomColor: 'navy', shoesStyle: 'shoes-canvas', accessory: null },
+  [EMP.youssef]: { bodyType: 'body-regular', skinTone: 'skin-01', hairStyle: 'hair-curly', hairColor: 'brown', topStyle: 'top-polo', topColor: 'green', bottomStyle: 'bottom-pants', bottomColor: 'khaki', shoesStyle: 'shoes-classic', accessory: null },
+  [EMP.omar]: { bodyType: 'body-broad', skinTone: 'skin-06', hairStyle: 'hair-curly', hairColor: 'black', topStyle: 'top-hoodie', topColor: 'orange', bottomStyle: 'bottom-jeans', bottomColor: 'denim', shoesStyle: 'shoes-boots', accessory: 'acc-glasses-round' },
+  [EMP.tamer]: { bodyType: 'body-slim', skinTone: 'skin-07', hairStyle: 'hair-short', hairColor: 'espresso', topStyle: 'top-tshirt', topColor: 'red', bottomStyle: 'bottom-shorts', bottomColor: 'olive', shoesStyle: 'shoes-sneakers', accessory: 'acc-sunglasses' },
+  [EMP.sara]: { bodyType: 'body-regular', skinTone: 'skin-03', hairStyle: 'hair-ponytail', hairColor: 'blonde', topStyle: 'top-sweater', topColor: 'pink', bottomStyle: 'bottom-skirt', bottomColor: 'navy', shoesStyle: 'shoes-classic', accessory: null },
+  [EMP.nour]: { bodyType: 'body-slim', skinTone: 'skin-05', hairStyle: 'hair-bob', hairColor: 'espresso', topStyle: 'top-polo', topColor: 'amber', bottomStyle: 'bottom-pants', bottomColor: 'stone', shoesStyle: 'shoes-canvas', accessory: 'acc-glasses-round' },
+  [EMP.ali]: { bodyType: 'body-regular', skinTone: 'skin-08', hairStyle: 'hair-shaved', hairColor: 'black', topStyle: 'top-shirt', topColor: 'white', bottomStyle: 'bottom-pants', bottomColor: 'navy', shoesStyle: 'shoes-boots', accessory: 'acc-lanyard' },
 };
 
 interface EmployeeSeed {
   id: UUID;
   displayName: string;
+  role: EmployeeRole;
   jobTitle: string;
-  teamId: UUID;
+  team: string;
   presence: PresenceStatus;
   /** Minutes since last seen, for offline employees. */
   lastSeenMinutesAgo?: number;
@@ -49,116 +50,125 @@ const activity = (type: ActivityType, rest: Partial<EmployeeActivity> = {}): Emp
   ...rest,
 });
 
+/** Seed order matters: desks are assigned by role in this order (see `assignDesksByRole`). */
 const EMPLOYEE_SEEDS: EmployeeSeed[] = [
+  {
+    id: EMP.karim,
+    displayName: 'Karim Tarek',
+    role: 'GENERAL_MANAGER',
+    jobTitle: 'General Manager',
+    team: 'Management',
+    presence: 'ONLINE',
+    activity: activity('AVAILABLE', { source: 'SYSTEM' }),
+  },
+  {
+    id: EMP.mariam,
+    displayName: 'Mariam Adel',
+    role: 'PROJECT_MANAGER',
+    jobTitle: 'Project Manager',
+    team: 'Project Management',
+    presence: 'ONLINE',
+    activity: activity('MEETING', { source: 'MICROSOFT_TEAMS', title: 'Release Readiness Review' }),
+    meetingId: MEETING.releaseReview,
+  },
   {
     id: EMP.mohamed,
     displayName: 'Mohamed Osama',
-    jobTitle: 'Frontend Developer',
-    teamId: TEAM.frontend,
+    role: 'TEAM_LEAD',
+    jobTitle: 'Developer / Team Lead',
+    team: 'Development',
     presence: 'ONLINE',
     activity: activity('WORKING', { title: 'Fix organization feature permissions', workItemId: WORK_ITEM.orgPermissions }),
   },
   {
     id: EMP.ahmed,
     displayName: 'Ahmed Hassan',
-    jobTitle: 'Backend Developer',
-    teamId: TEAM.backend,
+    role: 'DEVELOPER',
+    jobTitle: 'Developer',
+    team: 'Development',
     presence: 'ONLINE',
     activity: activity('CODING', { title: 'Dashboard filters for sprint health', workItemId: WORK_ITEM.dashboardFilters }),
   },
   {
-    id: EMP.sara,
-    displayName: 'Sara Ali',
-    jobTitle: 'Product Designer',
-    teamId: TEAM.design,
-    presence: 'ONLINE',
-    activity: activity('MEETING', { source: 'MICROSOFT_TEAMS', title: 'Design Review' }),
-    meetingId: MEETING.designReview,
-  },
-  {
-    id: EMP.omar,
-    displayName: 'Omar Khaled',
-    jobTitle: 'QA Engineer',
-    teamId: TEAM.quality,
-    presence: 'ONLINE',
-    activity: activity('CODE_REVIEW', { title: 'Fix feature permission mapping', pullRequestId: PULL_REQUEST.permissionMapping }),
-  },
-  {
     id: EMP.rana,
     displayName: 'Rana Mahmoud',
-    jobTitle: 'Frontend Developer',
-    teamId: TEAM.frontend,
-    presence: 'ONLINE',
-    activity: activity('FOCUS', { source: 'MANUAL', title: 'Heads-down: accessible date picker' }),
-  },
-  {
-    id: EMP.youssef,
-    displayName: 'Youssef Samir',
-    jobTitle: 'Backend Developer',
-    teamId: TEAM.backend,
-    presence: 'ONLINE',
-    activity: activity('BUILDING', { title: 'Frontend CI', buildId: BUILD.frontendCi }),
-  },
-  {
-    id: EMP.mariam,
-    displayName: 'Mariam Adel',
-    jobTitle: 'Product Manager',
-    teamId: TEAM.product,
-    presence: 'ONLINE',
-    activity: activity('MEETING', { source: 'MICROSOFT_TEAMS', title: 'Design Review' }),
-    meetingId: MEETING.designReview,
-  },
-  {
-    id: EMP.karim,
-    displayName: 'Karim Tarek',
-    jobTitle: 'Engineering Manager',
-    teamId: TEAM.leadership,
-    presence: 'ONLINE',
-    activity: activity('AVAILABLE', { source: 'SYSTEM' }),
-  },
-  {
-    id: EMP.nour,
-    displayName: 'Nour Ahmed',
-    jobTitle: 'UX Designer',
-    teamId: TEAM.design,
+    role: 'DEVELOPER',
+    jobTitle: 'UX/UI Designer',
+    team: 'Design',
     presence: 'ONLINE',
     activity: activity('BREAK', { source: 'MANUAL', title: 'Ping-pong break' }),
   },
   {
-    id: EMP.ali,
-    displayName: 'Ali Mostafa',
-    jobTitle: 'DevOps Engineer',
-    teamId: TEAM.platform,
-    presence: 'OFFLINE',
-    lastSeenMinutesAgo: 35,
-    activity: activity('OFFLINE', { source: 'SYSTEM' }),
+    id: EMP.youssef,
+    displayName: 'Youssef Samir',
+    role: 'DEVELOPER',
+    jobTitle: 'Developer',
+    team: 'Development',
+    presence: 'ONLINE',
+    activity: activity('BUILDING', { title: 'Frontend CI', buildId: BUILD.frontendCi }),
   },
   {
-    id: EMP.hana,
-    displayName: 'Hana Yasser',
-    jobTitle: 'QA Engineer',
-    teamId: TEAM.quality,
+    id: EMP.omar,
+    displayName: 'Omar Khaled',
+    role: 'DEVELOPER',
+    jobTitle: 'Developer',
+    team: 'Development',
     presence: 'ONLINE',
-    activity: activity('WORKING', { title: 'Regression suite: organization settings', workItemId: WORK_ITEM.regressionSuite }),
+    activity: activity('CODE_REVIEW', { title: 'Fix feature permission mapping', pullRequestId: PULL_REQUEST.permissionMapping }),
   },
   {
     id: EMP.tamer,
     displayName: 'Tamer Nabil',
-    jobTitle: 'Mobile Developer',
-    teamId: TEAM.mobile,
+    role: 'DEVELOPER',
+    jobTitle: 'Mobile Flutter Developer',
+    team: 'Mobile Development',
     presence: 'ONLINE',
     activity: activity('BLOCKED', { title: 'iOS push notifications drop after token refresh', workItemId: WORK_ITEM.iosPush }),
   },
+  {
+    id: EMP.sara,
+    displayName: 'Sara Ali',
+    role: 'QA',
+    jobTitle: 'QA Engineer',
+    team: 'QA',
+    presence: 'ONLINE',
+    activity: activity('MEETING', { source: 'MICROSOFT_TEAMS', title: 'Release Readiness Review' }),
+    meetingId: MEETING.releaseReview,
+  },
+  {
+    id: EMP.nour,
+    displayName: 'Nour Ahmed',
+    role: 'QA',
+    jobTitle: 'QA Engineer',
+    team: 'QA',
+    presence: 'ONLINE',
+    activity: activity('TESTING', { title: 'Regression suite: organization settings', workItemId: WORK_ITEM.regressionSuite }),
+  },
+  {
+    id: EMP.ali,
+    displayName: 'Ali Mostafa',
+    role: 'QA',
+    jobTitle: 'QA Engineer',
+    team: 'QA',
+    presence: 'OFFLINE',
+    lastSeenMinutesAgo: 35,
+    activity: activity('OFFLINE', { source: 'SYSTEM' }),
+  },
 ];
+
+/** Who needs a desk, in assignment order. */
+export const DEMO_DESK_ASSIGNEES = EMPLOYEE_SEEDS.map(({ id, role }) => ({ id, role }));
 
 export interface DemoIdentity {
   employeeId: UUID;
   displayName: string;
+  role: EmployeeRole;
   jobTitle: string;
+  team: string;
 }
 
 /** Everyone you can sign in as in demo mode (one identity per browser tab). */
-export const DEMO_IDENTITIES: DemoIdentity[] = EMPLOYEE_SEEDS.map(({ id, displayName, jobTitle }) => ({ employeeId: id, displayName, jobTitle }));
+export const DEMO_IDENTITIES: DemoIdentity[] = EMPLOYEE_SEEDS.map(({ id, displayName, role, jobTitle, team }) => ({ employeeId: id, displayName, role, jobTitle, team }));
 
 export function createDemoEmployees(now: number, desks: Desk[], meetingRoomById: Record<UUID, UUID | null>): Employee[] {
   const iso = new Date(now).toISOString();
@@ -174,10 +184,10 @@ export function createDemoEmployees(now: number, desks: Desk[], meetingRoomById:
       id: seed.id,
       organizationId: DEMO_ORGANIZATION_ID,
       displayName: seed.displayName,
-      email: `${seed.displayName.toLowerCase().replace(/\s+/g, '.')}@acme.dev`,
-      avatarUrl: null,
+      email: demoEmailFor(seed.displayName),
+      role: seed.role,
       jobTitle: seed.jobTitle,
-      teamId: seed.teamId,
+      team: seed.team,
       position: desk ? { x: desk.position.x, y: desk.position.y, direction: 'down' } : { x: 0, y: 0, direction: 'down' },
       assignedDesk: desk ? { deskId: desk.id, x: desk.position.x, y: desk.position.y } : null,
       presence: { status: seed.presence, lastSeenAt, connectedSocketId: null },
@@ -187,4 +197,3 @@ export function createDemoEmployees(now: number, desks: Desk[], meetingRoomById:
     };
   });
 }
-

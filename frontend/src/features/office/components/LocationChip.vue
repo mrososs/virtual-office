@@ -16,13 +16,13 @@ const others = computed(() => (room.value ? Math.max(0, roomStore.occupantsOf(ro
 const realtime = computed(() => {
   switch (officeStore.realtimeStatus) {
     case 'connected':
-      return { label: uiStore.liveEmployeeIds.length > 0 ? `Live · ${uiStore.liveEmployeeIds.length} connected` : 'Live', color: '#22c55e' };
+      return { label: uiStore.liveEmployeeIds.length > 0 ? `Live · ${uiStore.liveEmployeeIds.length} connected` : 'Live', color: '#22c55e', hint: undefined };
     case 'connecting':
-      return { label: 'Connecting…', color: '#f59e0b' };
+      return { label: 'Connecting…', color: '#f59e0b', hint: undefined };
     case 'disconnected':
-      return { label: 'Realtime offline', color: '#ef4444' };
+      return { label: 'Disconnected', color: '#ef4444', hint: 'Reconnecting to the Virtual Office…' };
     default:
-      return { label: 'Local only', color: '#6b7385' };
+      return { label: 'Local only', color: '#6b7385', hint: 'Start the backend with DEMO_MODE=true for multiplayer' };
   }
 });
 </script>
@@ -33,7 +33,7 @@ const realtime = computed(() => {
     <span class="text-ink">{{ room ? room.name : 'Hallway' }}</span>
     <span v-if="room && others > 0" class="text-subtle">· {{ others }} here</span>
     <span class="mx-0.5 h-3 w-px bg-line/10" />
-    <span class="inline-flex items-center gap-1" :title="officeStore.realtimeStatus === 'disabled' ? 'Start the backend with DEMO_MODE=true for multiplayer' : undefined">
+    <span class="inline-flex items-center gap-1" :title="realtime.hint">
       <Radio :size="12" :style="{ color: realtime.color }" />
       <span class="text-muted">{{ realtime.label }}</span>
     </span>

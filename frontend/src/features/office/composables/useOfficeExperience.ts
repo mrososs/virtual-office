@@ -10,6 +10,7 @@ import { useGameBridgeEvent } from '@/shared/composables';
 import { useAuthStore } from '@/stores/auth.store';
 import { useOfficeStore } from '@/stores/office.store';
 
+import { useOfficeLiveUpdates } from './useOfficeLiveUpdates';
 import { useOfficeWorldSync } from './useOfficeWorldSync';
 
 export type OfficePhase = 'loading' | 'starting' | 'ready' | 'error';
@@ -27,6 +28,7 @@ export function useOfficeExperience() {
   const authStore = useAuthStore();
   const world = useOfficeWorldSync();
   useOfficeNarrator();
+  if (!runtimeEnv.demoMode) useOfficeLiveUpdates();
 
   const gameReady = shallowRef(false);
   const initializing = shallowRef(false);
@@ -87,13 +89,13 @@ export function useOfficeExperience() {
     const officeId = officeStore.office?.id;
     if (!employeeId || !officeId) return null;
 
-    let token = authStore.realtimeToken;
-    if (runtimeEnv.demoMode) {
-      const { demoSessionService } = await import('@/demo/demo-session.service');
-      token = await demoSessionService.ensureRealtimeToken();
-    } else {
-      socketClient.setAuthToken(token);
+    if (!runtimeEnv.demoMode) {
+      // The session cookie authenticates the socket; the server decides who we are.
+      socketClient.setAuthToken(null);
+      return { officeId, employeeId };
     }
+    const { demoSessionService } = await import('@/demo/demo-session.service');
+    const token = await demoSessionService.ensureRealtimeToken();
     return token ? { officeId, employeeId } : null;
   }
 

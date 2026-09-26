@@ -1,5 +1,5 @@
 import type { UUID } from '@virtual-office/shared';
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 
 import { GAME_EVENTS, gameBridge, type InteractionTarget } from '@/game/bridge';
 import type { DeskEntity } from '@/game/entities/Desk';
@@ -9,6 +9,8 @@ import { distance } from '@/game/maps/map-geometry';
 import type { RoomVisual } from '@/game/rooms/RoomVisual';
 
 const EMPLOYEE_RADIUS = 62;
+/** Avatar hit box relative to the feet (the body Container has no size of its own). */
+const AVATAR_HIT_AREA = new Phaser.Geom.Rectangle(-11, -40, 22, 42);
 const DESK_RADIUS = 42;
 const PROXIMITY_INTERVAL_MS = 120;
 
@@ -36,11 +38,11 @@ export class InteractionSystem {
   }
 
   registerEmployee(avatar: EmployeeAvatar): void {
-    const sprite = avatar.body;
-    sprite.setInteractive({ useHandCursor: true, pixelPerfect: false });
-    sprite.on('pointerover', () => avatar.setHovered(true));
-    sprite.on('pointerout', () => avatar.setHovered(false));
-    sprite.on('pointerdown', () => this.emitEmployee(avatar.employeeId, 'pointer'));
+    const body = avatar.body;
+    body.setInteractive({ hitArea: AVATAR_HIT_AREA, hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
+    body.on('pointerover', () => avatar.setHovered(true));
+    body.on('pointerout', () => avatar.setHovered(false));
+    body.on('pointerdown', () => this.emitEmployee(avatar.employeeId, 'pointer'));
   }
 
   registerDesk(desk: DeskEntity): void {

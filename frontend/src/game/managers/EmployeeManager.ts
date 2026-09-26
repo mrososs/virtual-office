@@ -1,6 +1,7 @@
-import type { Direction, PlacementTarget, UUID, Vector2 } from '@virtual-office/shared';
+import type { AvatarAppearance, Direction, PlacementTarget, UUID, Vector2 } from '@virtual-office/shared';
 import Phaser from 'phaser';
 
+import type { AvatarFactory } from '@/game/avatars/AvatarFactory';
 import type { EmployeeStatusView, EmployeeWorldState } from '@/game/bridge/GameEvents';
 import { EmployeeAvatar } from '@/game/entities/EmployeeAvatar';
 import { RemotePlayer } from '@/game/entities/RemotePlayer';
@@ -25,6 +26,7 @@ interface EmployeeRuntime {
 }
 
 export interface EmployeeManagerDeps {
+  avatars: AvatarFactory;
   autoMovement: AutoMovementSystem;
   roomManager: RoomManager;
   deskManager: DeskManager;
@@ -59,6 +61,7 @@ export class EmployeeManager {
       position: { x: entrance.x, y: entrance.y },
       facing: entrance.facing,
       isLocal: false,
+      avatars: this.deps.avatars,
     });
     this.deps.interaction.registerEmployee(avatar);
     const runtime: EmployeeRuntime = { avatar, placement: state.placement, anchor: null, settled: false, wanderAt: null, awayFromAnchor: false, version: 0 };
@@ -77,6 +80,10 @@ export class EmployeeManager {
 
   applyStatus(view: EmployeeStatusView): void {
     this.runtimes.get(view.employeeId)?.avatar.applyStatus(view);
+  }
+
+  applyAppearance(employeeId: UUID, appearance: AvatarAppearance): void {
+    this.runtimes.get(employeeId)?.avatar.setAppearance(appearance);
   }
 
   applyPlacement(employeeId: UUID, placement: PlacementTarget, instant: boolean): void {
@@ -118,7 +125,7 @@ export class EmployeeManager {
       avatar.body.setPosition(target.position.x, target.position.y);
       if (target.facing) avatar.body.face(target.facing);
       if (avatar.isHidden) avatar.setHidden(false, false);
-      avatar.sync();
+      avatar.sync(0);
       this.settle(runtime);
       this.deps.roomSystem().evaluate(avatar);
       return;

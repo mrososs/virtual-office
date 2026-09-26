@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import type { Employee } from '@virtual-office/shared';
+import { employeeTitle, matchesEmployeeSearch, type Employee } from '@virtual-office/shared';
 import { Search } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 import { useOfficeCommands } from '@/features/office/composables/useOfficeCommands';
 import { useClickOutside } from '@/shared/composables';
 import { useEmployeeStore } from '@/stores/employee.store';
-import { useOfficeStore } from '@/stores/office.store';
 
 import EmployeeAvatar from './EmployeeAvatar.vue';
 import EmployeeStatus from './EmployeeStatus.vue';
 
 const employeeStore = useEmployeeStore();
-const officeStore = useOfficeStore();
 const { focusEmployee } = useOfficeCommands();
 
 const query = shallowRef('');
@@ -22,13 +20,9 @@ const root = useTemplateRef<HTMLElement>('root');
 const input = useTemplateRef<HTMLInputElement>('input');
 
 const results = computed<Employee[]>(() => {
-  const term = query.value.trim().toLowerCase();
+  const term = query.value.trim();
   if (!term) return employeeStore.all.slice(0, 6);
-  return employeeStore.all
-    .filter((employee) =>
-      [employee.displayName, employee.jobTitle ?? '', officeStore.teamName(employee.teamId) ?? ''].some((field) => field.toLowerCase().includes(term)),
-    )
-    .slice(0, 8);
+  return employeeStore.all.filter((employee) => matchesEmployeeSearch(employee, term)).slice(0, 8);
 });
 
 useClickOutside(root, open, () => (open.value = false));
@@ -115,7 +109,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown));
                 <span class="block truncate text-[13px] font-medium text-ink">{{ employee.displayName }}</span>
                 <EmployeeStatus :employee="employee" />
               </span>
-              <span class="shrink-0 text-2xs text-subtle">{{ employee.jobTitle }}</span>
+              <span class="max-w-[45%] shrink-0 truncate text-2xs text-subtle">{{ employeeTitle(employee) }}</span>
             </button>
           </li>
         </ul>

@@ -23,23 +23,50 @@ SYSTEM ─────────┘
 - **EmployeeActivity** — the single resolved value attached to the employee
   and broadcast over `employee:activity_changed`.
 
-## Example signal → state mapping
+## How signals arrive
+
+- `ingestSignal(signal)` — one event (future Service Hooks, manual status).
+- `replaceSource(source, signalsByEmployee)` — a source's complete current
+  picture. The Azure DevOps scheduled sync uses this: everyone's
+  `AZURE_DEVOPS` signals are replaced after each run; other sources are
+  untouched. At startup the signals are rebuilt from the persisted
+  `azure_*` tables (if the last sync is recent enough).
+- Every Azure signal carries an `expiresAt` (~3 sync intervals); a 60 s sweep
+  re-resolves expired employees. With no live signal an employee resolves to
+  `AVAILABLE` (source `SYSTEM`).
+- `changes$` emits only real changes; the realtime gateway broadcasts them as
+  `employee:activity_changed`. Signals may reference `workItemId`,
+  `pullRequestId` or `buildId`, copied onto the resolved activity so the UI
+  can show "Reviewing PR #493".
+
+## Signal → state mapping
+
+Implemented (Azure DevOps, `azure-devops/azure-activity.mapper.ts`):
+
+| Azure DevOps data                                             | `ActivityType` |
+|---------------------------------------------------------------|----------------|
+| Assigned item Active / In Progress / Dev In Progress / Committed / In Review | `WORKING` |
+| Assigned item Ready for Test / Ready for Testing / In Test / Testing | `TESTING` |
+| Assigned item Blocked / On Hold, or tagged `Blocked`            | `BLOCKED`      |
+| Reviewer without a vote on an active PR opened < 4 h ago        | `CODE_REVIEW`  |
+| Author of an active draft PR opened < 8 h ago                   | `CODING`       |
+| Own build in progress                                           | `BUILDING`     |
+
+Planned sources:
 
 | Signal                          | Resulting `ActivityType` |
 |----------------------------------|---------------------------|
-| Active work item assigned         | `WORKING`                 |
-| Recent commit                      | `CODING`                  |
-| Assigned PR reviewer                | `CODE_REVIEW`             |
-| Pipeline running                     | `BUILDING`                |
-| Work item flagged blocked             | `BLOCKED`                 |
-| Active Teams meeting                   | `MEETING`                 |
-| User manually sets Focus                | `FOCUS`                   |
-| User manually sets Break                 | `BREAK`                   |
+| Active Teams meeting (Graph)      | `MEETING`                 |
+| User manually sets Focus          | `FOCUS`                   |
+| User manually sets Break          | `BREAK`                   |
 
-Where an activity puts the avatar (desk / Code Review room / Meeting room /
-Lounge / Focus room) is a separate concern, decided by domain logic in
-`rooms`/`realtime`, never hardcoded inside `azure-devops`/`microsoft`
-services. Those modules only ever produce `ActivitySignal`s.
+Where an activity puts the avatar is a separate concern, decided by
+`resolveActivityPlacement` (`shared/src/domain/activity-placement.ts`):
+work activities (`WORKING`, `CODING`, `BUILDING`, `TESTING`, `FOCUS`,
+`BLOCKED`) keep people at their own desk, `CODE_REVIEW` goes to the
+collaboration area, `MEETING` to the meeting's room and `BREAK` to a break
+room. It is never hardcoded inside `azure-devops`/`microsoft` services —
+those modules only ever produce `ActivitySignal`s.
 
 ## Conflict resolution
 
@@ -49,12 +76,14 @@ resolves this via a **configurable, ordered priority list** rather than
 if/else chains scattered through the codebase:
 
 ```
-MEETING > BLOCKED > CODE_REVIEW > BUILDING > CODING > WORKING > AVAILABLE
+MEETING > BLOCKED > CODE_REVIEW > BUILDING > TESTING > CODING > WORKING > FOCUS > BREAK > AVAILABLE
 ```
 
-This is an example ordering, not a law — `DefaultActivityResolutionStrategy`
-takes the priority list as constructor/config input so it can be changed
-(or made per-organization) later without touching call sites.
+`DefaultActivityResolutionStrategy` takes the priority list as
+constructor/config input so it can be changed later without touching call
+sites. Among signals of the winning type the resolver picks the highest
+confidence, then the most recent. Because Azure is only one source, a
+future Teams `MEETING` signal outranks any Azure work signal automatically.
 
 ## Presence stays separate
 

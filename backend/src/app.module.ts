@@ -5,13 +5,15 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import configuration, { isDemoModeEnabled } from './config/configuration';
 import { validate } from './config/env.validation';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { SecurityModule } from './common/security/security.module';
 import { SupabaseModule } from './common/supabase/supabase.module';
 
+import { SessionModule } from './modules/session/session.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { TeamsModule } from './modules/teams/teams.module';
 import { EmployeesModule } from './modules/employees/employees.module';
+import { AvatarsModule } from './modules/avatars/avatars.module';
 import { OfficesModule } from './modules/offices/offices.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { MeetingsModule } from './modules/meetings/meetings.module';
@@ -31,12 +33,14 @@ import { DemoModule } from './modules/demo/demo.module';
       validate,
     }),
     SupabaseModule,
+    SecurityModule,
+    SessionModule,
 
     AuthModule,
-    UsersModule,
     OrganizationsModule,
     TeamsModule,
     EmployeesModule,
+    AvatarsModule,
     OfficesModule,
     RoomsModule,
     MeetingsModule,

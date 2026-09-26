@@ -2,9 +2,12 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 
+import { COMPANY_BRANDING } from '@/core/config/branding';
 import EmployeeAvatar from '@/features/employees/components/EmployeeAvatar.vue';
 import EmployeeSearch from '@/features/employees/components/EmployeeSearch.vue';
+import AzureAttentionChip from '@/features/integrations/components/AzureAttentionChip.vue';
 import NotificationsMenu from '@/features/notifications/components/NotificationsMenu.vue';
+import { CompanyBrand } from '@/shared/components';
 import { useEmployeeStore } from '@/stores/employee.store';
 import { useOfficeStore } from '@/stores/office.store';
 import { useWorkStore } from '@/stores/work.store';
@@ -14,7 +17,7 @@ import ProfileMenu from './ProfileMenu.vue';
 const officeStore = useOfficeStore();
 const employeeStore = useEmployeeStore();
 const workStore = useWorkStore();
-const { organizationName, office, floor } = storeToRefs(officeStore);
+const { floor } = storeToRefs(officeStore);
 
 const online = computed(() => employeeStore.all.filter((employee) => employee.presence.status !== 'OFFLINE'));
 const avatarStack = computed(() => online.value.slice(0, 4));
@@ -26,13 +29,7 @@ const sprintLabel = computed(() => {
 
 <template>
   <header class="relative z-30 flex h-12 shrink-0 items-center gap-3 border-b border-line/[0.06] bg-surface/80 px-3 backdrop-blur-md">
-    <div class="flex min-w-0 items-center gap-2.5 pr-1">
-      <img src="/favicon.svg" alt="" class="h-6 w-6 shrink-0">
-      <div class="min-w-0 leading-tight">
-        <p class="truncate text-[13px] font-semibold text-ink">{{ organizationName || 'Virtual Office' }}</p>
-        <p v-if="office" class="truncate text-2xs text-subtle">{{ office.name }} · {{ floor?.name }}</p>
-      </div>
-    </div>
+    <CompanyBrand class="pr-1" :subtitle="floor ? `${COMPANY_BRANDING.productName} · ${floor.name}` : undefined" />
 
     <div class="hidden h-5 w-px bg-line/10 md:block" />
 
@@ -51,6 +48,7 @@ const sprintLabel = computed(() => {
     </span>
 
     <div class="ml-auto flex items-center gap-1.5">
+      <AzureAttentionChip />
       <EmployeeSearch />
       <NotificationsMenu />
       <ProfileMenu />

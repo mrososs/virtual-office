@@ -11,6 +11,7 @@ export type ActivityType =
   | 'CODING'
   | 'CODE_REVIEW'
   | 'BUILDING'
+  | 'TESTING'
   | 'BLOCKED'
   | 'MEETING'
   | 'FOCUS'
@@ -41,7 +42,10 @@ export interface ActivitySignal {
   type: ActivityType;
   confidence: ActivityConfidence;
   title?: string;
+  /** Internal `WorkItem.id` / `PullRequest.id` / `Build.id` the signal is about, copied onto the resolved activity. */
   workItemId?: string;
+  pullRequestId?: string;
+  buildId?: string;
   occurredAt: ISODateString;
   expiresAt?: ISODateString | null;
 }

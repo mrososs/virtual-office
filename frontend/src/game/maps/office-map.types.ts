@@ -117,6 +117,19 @@ export interface FloorText {
   alpha: number;
 }
 
+/** A decorative wall-mounted panel: center and size in world px. Never blocks movement. */
+export interface WallSignPlacement {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Where company signage hangs on this floor. Content comes from COMPANY_BRANDING, not the map. */
+export interface OfficeSignage {
+  companySign?: WallSignPlacement;
+}
+
 export interface OfficeMapDefinition {
   key: string;
   width: number;
@@ -131,6 +144,7 @@ export interface OfficeMapDefinition {
   furniture: FurniturePlacement[];
   roomLayouts: RoomLayout[];
   floorTexts: FloorText[];
+  signage?: OfficeSignage;
   playerSpawn: MapSpot;
   /** Where arriving employees appear and where leaving employees walk out. */
   entrance: MapSpot;

@@ -1,6 +1,8 @@
 import type { Bounds, Desk, UUID, Vector2 } from '@virtual-office/shared';
 import Phaser from 'phaser';
 
+import { COMPANY_BRANDING } from '@/core/config/branding';
+import { CompanySign } from '@/game/entities/CompanySign';
 import { InteractiveObjectEntity } from '@/game/entities/InteractiveObject';
 import { deskBounds, furnitureBounds, wallBounds } from '@/game/maps/map-geometry';
 import { OfficeMapRenderer } from '@/game/maps/OfficeMapRenderer';
@@ -21,6 +23,7 @@ export class OfficeMapManager {
   public grid!: NavigationGrid;
   public blockers: Bounds[] = [];
   public furniture: InteractiveObjectEntity[] = [];
+  private sign: CompanySign | null = null;
 
   private readonly renderer: OfficeMapRenderer;
   private readonly layoutsByRoomId = new Map<UUID, RoomLayout>();
@@ -33,6 +36,8 @@ export class OfficeMapManager {
     this.map = map;
     this.renderer.render(map);
     this.furniture = map.furniture.map((placement) => new InteractiveObjectEntity(this.scene, placement));
+    // Decorative only: deliberately not a blocker and not in the navigation grid.
+    this.sign = map.signage?.companySign ? new CompanySign(this.scene, map.signage.companySign, COMPANY_BRANDING) : null;
     for (const layout of map.roomLayouts) this.layoutsByRoomId.set(layout.roomId, layout);
 
     const inset = (bounds: Bounds): Bounds => ({
@@ -78,5 +83,7 @@ export class OfficeMapManager {
     this.renderer.destroy();
     for (const entity of this.furniture) entity.destroy();
     this.furniture = [];
+    this.sign?.destroy();
+    this.sign = null;
   }
 }

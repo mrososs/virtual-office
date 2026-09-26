@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Employee } from '@virtual-office/shared';
+import { employeeTitle, type Employee } from '@virtual-office/shared';
 import { computed } from 'vue';
 
 import { formatRelativeTime } from '@/shared/utils/format';
@@ -34,8 +34,8 @@ const location = computed(() => {
       </span>
       <EmployeeStatus :employee="employee" class="max-w-full" />
     </span>
-    <span class="flex w-[92px] shrink-0 flex-col items-end text-right">
-      <span class="truncate text-2xs text-muted">{{ employee.jobTitle }}</span>
+    <span class="flex w-[112px] shrink-0 flex-col items-end text-right">
+      <span class="w-full truncate text-2xs text-muted" :title="employeeTitle(employee)">{{ employeeTitle(employee) }}</span>
       <span class="w-full truncate text-2xs text-subtle">{{ location }}</span>
     </span>
   </button>

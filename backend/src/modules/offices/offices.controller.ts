@@ -1,9 +1,9 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import type { Office, OfficeFloor } from '@virtual-office/shared';
 import { OfficesService } from './offices.service';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { SessionAuthGuard } from '../session/session-auth.guard';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(SessionAuthGuard)
 @Controller('offices')
 export class OfficesController {
   constructor(private readonly officesService: OfficesService) {}

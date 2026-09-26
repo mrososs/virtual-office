@@ -11,6 +11,8 @@ export const DEPTH = {
   FLOOR_TEXT: -18_500,
   ROOM_HIGHLIGHT: -18_000,
   WALL: -15_000,
+  /** Wall-mounted signage: above the wall strip, below everyone walking past. */
+  WALL_SIGN: -14_500,
   AVATAR_RING: -14_000,
   ROOM_LABEL: 90_000,
   ROOM_SIGN: 91_000,

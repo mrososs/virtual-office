@@ -40,6 +40,10 @@ export class DeskManager {
     return desk.owner ? `Desk ${deskCode(desk.deskId)} · ${desk.owner.displayName}` : `Desk ${deskCode(desk.deskId)}`;
   }
 
+  setOwnerAccent(employeeId: UUID, accent: number): void {
+    for (const desk of this.desks.values()) if (desk.owner?.employeeId === employeeId) desk.setOwnerAccent(accent);
+  }
+
   setSelected(deskId: UUID | null): void {
     if (this.selectedDeskId === deskId) return;
     if (this.selectedDeskId) this.desks.get(this.selectedDeskId)?.setHighlighted(false);

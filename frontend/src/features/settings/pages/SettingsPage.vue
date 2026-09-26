@@ -2,16 +2,24 @@
 import { computed } from 'vue';
 
 import { runtimeEnv } from '@/core/config';
-import EmployeeAvatar from '@/features/employees/components/EmployeeAvatar.vue';
+import DesktopAppCard from '@/features/pwa/components/DesktopAppCard.vue';
 import { useAuthStore } from '@/stores/auth.store';
-import { useEmployeeStore } from '@/stores/employee.store';
 import { useOfficeStore } from '@/stores/office.store';
 
+import IntegrationsSummaryCard from '../components/IntegrationsSummaryCard.vue';
+import ProfileCard from '../components/ProfileCard.vue';
+
 const authStore = useAuthStore();
-const employeeStore = useEmployeeStore();
 const officeStore = useOfficeStore();
 
-const me = computed(() => (authStore.currentEmployeeId ? employeeStore.byId(authStore.currentEmployeeId) : undefined));
+const SESSION_LABELS = {
+  azure_pat: 'Signed in with your Azure DevOps token',
+  microsoft_entra: 'Signed in with Microsoft',
+  demo: 'Demo session (no credentials)',
+} as const;
+
+const sessionLabel = computed(() => (authStore.isDemoSession ? SESSION_LABELS.demo : authStore.provider ? SESSION_LABELS[authStore.provider] : 'Signed in'));
+const sessionExpiry = computed(() => (authStore.sessionExpiresAt ? new Date(authStore.sessionExpiresAt).toLocaleDateString() : null));
 </script>
 
 <template>
@@ -19,28 +27,19 @@ const me = computed(() => (authStore.currentEmployeeId ? employeeStore.byId(auth
     <div class="mx-auto max-w-[720px] space-y-6 px-6 py-8">
       <h1 class="text-lg font-semibold">Settings</h1>
 
-      <section class="vo-panel p-5">
-        <p class="vo-section-label mb-3">Profile</p>
-        <div v-if="me" class="flex items-center gap-3">
-          <EmployeeAvatar :employee="me" size="lg" />
-          <div>
-            <p class="text-sm font-semibold">{{ me.displayName }}</p>
-            <p class="text-xs text-muted">{{ me.jobTitle }} · {{ officeStore.teamName(me.teamId) }}</p>
-            <p class="text-2xs text-subtle">{{ me.email }}</p>
-          </div>
-        </div>
-        <p v-else class="text-[13px] text-muted">Open the office once to load your profile.</p>
-      </section>
+      <ProfileCard />
+      <IntegrationsSummaryCard v-if="!authStore.isDemoSession" />
+      <DesktopAppCard />
 
       <section class="vo-panel p-5">
         <p class="vo-section-label mb-3">Workspace</p>
         <dl class="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">
           <dt class="text-subtle">Organization</dt>
-          <dd>{{ officeStore.organizationName || '—' }}</dd>
+          <dd>{{ officeStore.organizationName || 'iSaned' }}</dd>
           <dt class="text-subtle">Office</dt>
-          <dd>{{ officeStore.office?.name ?? '—' }} · {{ officeStore.floor?.name ?? '' }}</dd>
+          <dd>{{ [officeStore.office?.name, officeStore.floor?.name].filter(Boolean).join(' · ') || '—' }}</dd>
           <dt class="text-subtle">Session</dt>
-          <dd>{{ authStore.isDemoSession ? 'Demo session (no credentials)' : 'Signed in' }}</dd>
+          <dd>{{ sessionLabel }}<span v-if="sessionExpiry" class="text-subtle"> · until {{ sessionExpiry }} at the latest</span></dd>
         </dl>
       </section>
 

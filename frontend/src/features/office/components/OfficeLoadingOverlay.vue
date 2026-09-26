@@ -3,6 +3,7 @@ import { Check, LoaderCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 import type { OfficePhase } from '@/features/office/composables/useOfficeExperience';
+import { COMPANY_BRANDING } from '@/core/config/branding';
 import { useOfficeStore } from '@/stores/office.store';
 
 const props = defineProps<{ phase: OfficePhase }>();
@@ -11,7 +12,7 @@ const officeStore = useOfficeStore();
 const steps = computed(() => {
   const dataDone = props.phase !== 'loading';
   return [
-    { label: `Loading ${officeStore.organizationName || 'your company'}`, done: dataDone, active: !dataDone },
+    { label: `Loading ${officeStore.floor?.name ?? 'the floor plan'} and the team`, done: dataDone, active: !dataDone },
     { label: 'Starting the office engine', done: false, active: dataDone },
     { label: 'Seating everyone at their desks', done: false, active: false },
   ];
@@ -22,9 +23,9 @@ const steps = computed(() => {
   <div class="absolute inset-0 z-30 flex items-center justify-center bg-canvas">
     <div class="w-[300px]">
       <div class="mb-6 flex items-center gap-3">
-        <img src="/favicon.svg" alt="" class="h-9 w-9">
+        <img :src="COMPANY_BRANDING.logoSource" alt="" class="h-8 w-auto">
         <div>
-          <p class="text-sm font-semibold">Opening the office</p>
+          <p class="text-sm font-semibold">Opening the {{ COMPANY_BRANDING.companyName }} office</p>
           <p class="text-xs text-subtle">This only takes a moment.</p>
         </div>
       </div>

@@ -33,6 +33,7 @@ export class DeskEntity {
   private readonly chair: Phaser.GameObjects.Image;
   private readonly highlight: Phaser.GameObjects.Graphics;
   private readonly nameplate: Phaser.GameObjects.Container | null;
+  private readonly plate: { image: Phaser.GameObjects.Image; width: number } | null;
   private readonly tooltip: Phaser.GameObjects.Container;
   private readonly code: string;
 
@@ -75,8 +76,10 @@ export class DeskEntity {
       const plate = scene.add.image(0, 0, ensurePlateTexture(scene, width, accentHex)).setScale(uiTextureScale(scene));
       text.setX(1.5);
       this.nameplate = scene.add.container(desk.position.x, desk.position.y + plateOffset, [plate, text]).setDepth(bounds.y + bounds.height + 0.05);
+      this.plate = { image: plate, width };
     } else {
       this.nameplate = null;
+      this.plate = null;
     }
 
     const tooltipText = scene.add
@@ -98,6 +101,12 @@ export class DeskEntity {
     this.state = state;
     this.surface.setTexture(deskTextureKey(state === 'PRESENT'));
     this.nameplate?.setAlpha(state === 'OFFLINE' ? 0.55 : 1);
+  }
+
+  /** The owner's look changed: keep the nameplate in their top color. */
+  setOwnerAccent(accent: number): void {
+    if (!this.plate) return;
+    this.plate.image.setTexture(ensurePlateTexture(this.surface.scene, this.plate.width, `#${accent.toString(16).padStart(6, '0')}`));
   }
 
   setHighlighted(highlighted: boolean): void {

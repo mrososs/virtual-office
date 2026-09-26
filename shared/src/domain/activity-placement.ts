@@ -4,6 +4,8 @@ import type { Employee } from '../types/employee.types.js';
 import type { Meeting } from '../types/meeting.types.js';
 import type { Room, RoomType } from '../types/room.types.js';
 
+import { ROLE_CONFIG } from './role-config.js';
+
 /**
  * Where an employee's avatar should be in the office, derived from their
  * presence + resolved activity. This is domain logic, not rendering: the game
@@ -24,17 +26,22 @@ export type PlacementRule =
   | { anchor: 'ROOM_TYPE'; roomTypes: RoomType[]; idle: PlacementIdleBehavior }
   | { anchor: 'HIDDEN' };
 
-/** Data, not branching: reorder or override per organization without touching call sites. */
+/**
+ * Data, not branching: reorder or override per organization without touching
+ * call sites. Day-to-day work (coding, building, testing, focus) stays at the
+ * person's own desk; only collaboration, meetings and breaks move people.
+ */
 export const DEFAULT_PLACEMENT_RULES: Record<ActivityType, PlacementRule> = {
   AVAILABLE: { anchor: 'DESK', idle: 'WANDER' },
   WORKING: { anchor: 'DESK', idle: 'STILL' },
   CODING: { anchor: 'DESK', idle: 'STILL' },
   BUILDING: { anchor: 'DESK', idle: 'STILL' },
+  TESTING: { anchor: 'DESK', idle: 'STILL' },
   BLOCKED: { anchor: 'DESK', idle: 'STILL' },
+  FOCUS: { anchor: 'DESK', idle: 'STILL' },
   CODE_REVIEW: { anchor: 'ROOM_TYPE', roomTypes: ['CODE_REVIEW'], idle: 'STILL' },
   MEETING: { anchor: 'MEETING_ROOM' },
-  FOCUS: { anchor: 'ROOM_TYPE', roomTypes: ['FOCUS'], idle: 'STILL' },
-  BREAK: { anchor: 'ROOM_TYPE', roomTypes: ['GAME', 'LOUNGE', 'KITCHEN'], idle: 'WANDER' },
+  BREAK: { anchor: 'ROOM_TYPE', roomTypes: ['BREAK'], idle: 'WANDER' },
   OFFLINE: { anchor: 'HIDDEN' },
   UNKNOWN: { anchor: 'DESK', idle: 'STILL' },
 };
@@ -87,8 +94,10 @@ function deskOrFallback(
   if (employee.assignedDesk) {
     return { kind: 'DESK', deskId: employee.assignedDesk.deskId, idle };
   }
-  const general = pickRoomByType(['GENERAL'], context);
-  return general ? { kind: 'ROOM', roomId: general.id, idle } : { kind: 'HIDDEN' };
+  // No desk: the role's home area, then common space.
+  const homeArea = ROLE_CONFIG[employee.role]?.defaultAreaType;
+  const room = (homeArea ? pickRoomByType([homeArea], context) : null) ?? pickRoomByType(['GENERAL'], context);
+  return room ? { kind: 'ROOM', roomId: room.id, idle } : { kind: 'HIDDEN' };
 }
 
 function pickRoomByType(roomTypes: readonly RoomType[], context: PlacementContext): Room | null {

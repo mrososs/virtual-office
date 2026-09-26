@@ -17,7 +17,7 @@ const FOLLOW_LERP = 0.1;
 export class CameraManager {
   private zoom = 1;
   private following = true;
-  private target: Phaser.GameObjects.Sprite | null = null;
+  private target: Phaser.GameObjects.Container | null = null;
   private world = { width: 0, height: 0 };
   private readonly dpr: number;
 
@@ -29,7 +29,7 @@ export class CameraManager {
     return this.scene.cameras.main;
   }
 
-  setup(worldWidth: number, worldHeight: number, target: Phaser.GameObjects.Sprite, zoom: number | null): void {
+  setup(worldWidth: number, worldHeight: number, target: Phaser.GameObjects.Container, zoom: number | null): void {
     this.target = target;
     this.world = { width: worldWidth, height: worldHeight };
     this.camera.setBackgroundColor('#0c0f15');

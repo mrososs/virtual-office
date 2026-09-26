@@ -4,8 +4,13 @@ Domain types and the Socket.IO event contract shared between `frontend` and
 `backend`. Nothing here should depend on Vue, Phaser, or NestJS — this
 package must stay framework-agnostic so both apps can import it freely.
 
-- `src/types/` — `Employee`, `Office`, `Room`, `Desk`, `Meeting`, activity &
-  presence types, navigation/movement types.
+- `src/types/` — `Employee`, `EmployeeRole`, `AvatarProfile`, `Office`,
+  `Room`, `Desk`, `Meeting`, activity & presence types, navigation/movement types.
+- `src/domain/` — framework-free policy shared by both apps:
+  `ROLE_CONFIG` (per-role labels and default areas), `assignDesksByRole`,
+  `resolveActivityPlacement`, and `AVATAR_CATALOG` with
+  `normalizeAvatarAppearance` (the backend validates realtime avatar
+  payloads with it).
 - `src/events/socket-events.ts` — `SOCKET_EVENTS` (canonical event-name
   constants), `ServerToClientEvents` / `ClientToServerEvents` /
   `InterServerEvents` / `SocketData` for typing the Socket.IO server and

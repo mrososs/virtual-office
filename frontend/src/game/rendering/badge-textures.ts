@@ -60,6 +60,20 @@ const GLYPHS: Record<ActivityType, GlyphDrawer> = {
       });
     }
   },
+  TESTING: (ctx) => {
+    stroke(ctx, () => {
+      ctx.moveTo(6.6, 4.2);
+      ctx.lineTo(6.6, 7.2);
+      ctx.lineTo(4.3, 11.2);
+      ctx.lineTo(11.7, 11.2);
+      ctx.lineTo(9.4, 7.2);
+      ctx.lineTo(9.4, 4.2);
+    });
+    stroke(ctx, () => {
+      ctx.moveTo(5.8, 4.2);
+      ctx.lineTo(10.2, 4.2);
+    });
+  },
   BLOCKED: (ctx) => {
     stroke(ctx, () => {
       ctx.moveTo(8, 4.4);

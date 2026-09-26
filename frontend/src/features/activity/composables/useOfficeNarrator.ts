@@ -3,7 +3,7 @@ import { nextTick, watch } from 'vue';
 
 import { GAME_EVENTS } from '@/game/bridge';
 import { useGameBridgeEvent } from '@/shared/composables';
-import { firstNameOf } from '@/shared/utils/avatar-appearance';
+import { firstNameOf } from '@/shared/utils/names';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDemoStore } from '@/stores/demo.store';
 import { useEmployeeStore } from '@/stores/employee.store';

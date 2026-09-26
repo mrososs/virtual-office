@@ -10,10 +10,16 @@ export interface OfficeDebugSnapshot {
     controlMode: PlayerControlMode;
     navigating: boolean;
     roomId: UUID | null;
+    /** Appearance key currently rendered. */
+    look: string;
   }>;
   occupancy: Record<UUID, UUID[]>;
   /** World → CSS px: cssX = canvasLeft + (worldX - camera.x) * camera.scale. */
   camera: { x: number; y: number; scale: number };
+  /** Distinct avatar layer textures alive (shared between avatars). */
+  avatarTextures: number;
+  /** The local avatar's layer sprites: all must show the same frame at the same offset. */
+  localLayers: Array<{ slot: string; key: string | null; frame: string | null; flipX: boolean; x: number; y: number; visible: boolean }>;
 }
 
 declare global {

@@ -1,3 +1,3 @@
 export * from './format';
-export * from './avatar-appearance';
+export * from './names';
 export * from './desk-code';

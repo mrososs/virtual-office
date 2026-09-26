@@ -1,5 +1,7 @@
 import type {
   ActivityType,
+  AvatarAppearance,
+  AvatarProfile,
   Desk,
   MeetingStatus,
   PlacementTarget,
@@ -10,7 +12,6 @@ import type {
 } from '@virtual-office/shared';
 
 import type { OfficeMapDefinition } from '@/game/maps/office-map.types';
-import type { AvatarAppearance } from '@/shared/utils/avatar-appearance';
 
 /**
  * Canonical list of events that cross the Vue <-> Phaser boundary.
@@ -37,11 +38,14 @@ export const GAME_EVENTS = {
   LOCAL_NAVIGATION_CHANGED: 'player:navigation_changed',
   REALTIME_STATUS_CHANGED: 'realtime:status_changed',
   LIVE_EMPLOYEES_CHANGED: 'realtime:live_employees_changed',
+  /** A connected teammate's avatar arrived over the socket (join or change). Vue stores it; it flows back as SET_EMPLOYEE_APPEARANCE. */
+  REMOTE_AVATAR_RECEIVED: 'realtime:avatar_received',
 
   /* Vue -> Phaser ----------------------------------------------------- */
   OFFICE_INIT: 'office:init',
   RESET_OFFICE: 'office:reset',
   SET_EMPLOYEE_STATUS: 'employee:set_status',
+  SET_EMPLOYEE_APPEARANCE: 'employee:set_appearance',
   MOVE_EMPLOYEE: 'employee:move',
   SET_ROOM_MEETING: 'room:set_meeting',
   SET_SELECTION: 'selection:set',
@@ -74,8 +78,16 @@ export interface EmployeeStatusView {
 
 export interface EmployeeWorldState {
   status: EmployeeStatusView;
+  /** Normalized (always renderable) look from the employee's AvatarProfile. */
   appearance: AvatarAppearance;
   placement: PlacementTarget;
+}
+
+export interface EmployeeAppearanceUpdate {
+  employeeId: UUID;
+  appearance: AvatarAppearance;
+  /** The saved profile behind `appearance`; for the local player it is what gets broadcast to peers. */
+  profile: AvatarProfile | null;
 }
 
 export interface RoomMeetingView {
@@ -103,6 +115,8 @@ export interface OfficeInitPayload {
   rooms: Room[];
   desks: Desk[];
   localPlayer: EmployeeWorldState;
+  /** The local player's saved avatar, announced to peers on join. */
+  localAvatar: AvatarProfile | null;
   /** Everyone except the local player. */
   employees: EmployeeWorldState[];
   roomMeetings: RoomMeetingState[];
@@ -140,10 +154,12 @@ export type GameEventPayloadMap = {
   [GAME_EVENTS.LOCAL_NAVIGATION_CHANGED]: { label: string | null; outcome?: 'arrived' | 'cancelled' | 'unreachable' };
   [GAME_EVENTS.REALTIME_STATUS_CHANGED]: { status: RealtimeConnectionStatus };
   [GAME_EVENTS.LIVE_EMPLOYEES_CHANGED]: { employeeIds: UUID[] };
+  [GAME_EVENTS.REMOTE_AVATAR_RECEIVED]: { employeeId: UUID; avatar: AvatarProfile };
 
   [GAME_EVENTS.OFFICE_INIT]: OfficeInitPayload;
   [GAME_EVENTS.RESET_OFFICE]: { employees: EmployeeWorldState[]; localPlayer: EmployeeStatusView; roomMeetings: RoomMeetingState[] };
   [GAME_EVENTS.SET_EMPLOYEE_STATUS]: EmployeeStatusView;
+  [GAME_EVENTS.SET_EMPLOYEE_APPEARANCE]: EmployeeAppearanceUpdate;
   [GAME_EVENTS.MOVE_EMPLOYEE]: { employeeId: UUID; placement: PlacementTarget };
   [GAME_EVENTS.SET_ROOM_MEETING]: RoomMeetingState;
   [GAME_EVENTS.SET_SELECTION]: { employeeId: UUID | null; roomId: UUID | null; deskId: UUID | null };

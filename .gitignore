@@ -14,3 +14,10 @@ Thumbs.db
 coverage/
 .turbo/
 *.tsbuildinfo
+
+# Real team roster for the employee seed (names + emails): keep out of the repository
+backend/seed/employees.json
+
+# Vercel CLI project link (vercel link) and local screen recordings
+.vercel
+screen shot/

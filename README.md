@@ -4,11 +4,15 @@ A real-time 2D virtual office for remote software teams — avatars, desks,
 rooms and meetings, with activity informed by Azure DevOps, Microsoft Teams
 and Microsoft 365 Calendar.
 
-The current build is a **functional demo**: a polished office (11 rooms,
-16 desks, 12 people) running on seeded data and a scripted timeline, with
-real Socket.IO multiplayer between browser tabs. Real Microsoft/Azure
-integrations are not implemented yet; their service boundaries exist as
-stubs. See [`docs/DEMO_MODE.md`](./docs/DEMO_MODE.md).
+Built for one team (iSaned). Pre-approved employees sign in once with their
+work email and an **Azure DevOps personal access token** (verified against
+Azure DevOps, stored encrypted; the browser only gets a session cookie),
+design a layered avatar that is saved in **Supabase**, and walk a shared
+office with real Socket.IO multiplayer and presence. Work activity comes from
+a read-only **Azure DevOps** sync. Microsoft Entra sign-in and Teams/Calendar
+are implemented/prepared but wait for an IT-approved app registration. The app installs as a Windows
+**desktop PWA**. A seeded **demo mode** (11 people, scripted timeline) stays
+available for development — see [`docs/DEMO_MODE.md`](./docs/DEMO_MODE.md).
 
 ## Structure
 
@@ -17,7 +21,8 @@ virtual-office/
 ├── frontend/   Vue 3 + TypeScript + Vite + Pinia + Vue Router + Phaser 3 + Tailwind
 ├── backend/    NestJS + Socket.IO gateway + Supabase (PostgreSQL)
 ├── shared/     @virtual-office/shared — domain types, placement policy, realtime contract
-└── docs/       architecture, demo mode, database schema, meetings/Teams, activity engine
+├── supabase/   SQL migrations (versioned, repeatable)
+└── docs/       architecture, auth, Azure DevOps, PWA, demo mode, database, activity engine
 ```
 
 Plain npm workspaces monorepo — no Nx/Turborepo.
@@ -26,29 +31,47 @@ Plain npm workspaces monorepo — no Nx/Turborepo.
 
 Requires Node 20+ (developed on Node 24).
 
+### Demo mode (no Microsoft / Supabase needed)
+
 ```bash
 npm install                                # all three workspaces
-cp backend/.env.example backend/.env       # DEMO_MODE=true is preset for local use
+cp backend/.env.example backend/.env       # then set DEMO_MODE=true
 npm run build:shared                       # build @virtual-office/shared first
 
-npm run dev:backend                        # NestJS API + realtime → http://localhost:3001/api
-npm run dev:frontend                       # Vite → http://localhost:5173/office
+npm run dev:backend                        # NestJS API + realtime → http://localhost:3001
+npm run dev:frontend                       # Vite → http://localhost:5173/office (proxies /api + /socket.io)
 ```
 
-The frontend's `frontend/.env.development` already sets `VITE_DEMO_MODE=true`,
-so the dev server opens straight into the demo office as **Mohamed**. The
-backend is optional for single-tab use (the office then runs "Local only");
-it is required for multiplayer.
+`frontend/.env.development` sets `VITE_DEMO_MODE=true`, so the dev server
+signs you in as **Mohamed**. The first visit asks you to create your avatar
+(`/profile/avatar`), then opens the office. The backend is optional for
+single-tab use ("Local only"); it is required for multiplayer.
 
 **Multiplayer check:** open `http://localhost:5173/office` and, in another
 browser window (or a private one), `http://localhost:5173/office?demoUser=ahmed`.
-Each tab sees the other avatar move live.
 
-Production build of everything:
+### Real mode (Azure DevOps token sign-in + Supabase)
+
+1. Apply the SQL migrations in [`supabase/migrations/`](./supabase/migrations) to your Supabase project.
+2. Fill `backend/.env`: `AUTH_PROVIDER=azure_pat`, `AZURE_DEVOPS_ORGANIZATION`, `AZURE_DEVOPS_PROJECT`,
+   Supabase service role key, `SESSION_SECRET`, `TOKEN_ENCRYPTION_KEY`, `DEMO_MODE=false`. No `ENTRA_*` values needed.
+3. Approve the team: `cp backend/seed/employees.example.json backend/seed/employees.json`, add each person with their
+   confirmed work email (as Azure DevOps shows it), `role` (authorization) and `jobTitle` / `team` (what the UI shows), then
+   `npm run seed:employees -w backend`. The full iSaned roster lives in [`docs/team-roster.example.json`](./docs/team-roster.example.json).
+4. Run `npm run dev:backend` and the frontend with `VITE_DEMO_MODE=false`
+   (e.g. `frontend/.env.development.local`), open http://localhost:5173 and sign in with your
+   work email + an Azure DevOps token — [`docs/AZURE_PAT_AUTH.md`](./docs/AZURE_PAT_AUTH.md).
+5. Azure DevOps sync details: [`docs/AZURE_DEVOPS_SETUP.md`](./docs/AZURE_DEVOPS_SETUP.md).
+6. Desktop app: [`docs/PWA_DESKTOP.md`](./docs/PWA_DESKTOP.md).
+   Hosting (SPA on Vercel, API on Railway): [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md).
+7. Later, when IT approves an Entra app registration: [`docs/MICROSOFT_AUTH_SETUP.md`](./docs/MICROSOFT_AUTH_SETUP.md) (`AUTH_PROVIDER=microsoft_entra`).
+
+Production build and checks:
 
 ```bash
-npm run build          # shared → backend → frontend (vue-tsc + vite build)
+npm run build          # shared → backend → frontend (vue-tsc + vite build + service worker)
 npm run lint           # ESLint (frontend) + tsc --noEmit (backend)
+npm run preview -w frontend   # serve the built PWA on http://localhost:4173 (API proxied)
 ```
 
 ## Using the office
@@ -68,14 +91,24 @@ npm run lint           # ESLint (frontend) + tsc --noEmit (backend)
 
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system overview, Vue/Phaser
   bridge, stores, rendering, movement, backend modules, realtime.
+- [`docs/AVATAR_SYSTEM.md`](./docs/AVATAR_SYSTEM.md) — avatar profiles, the
+  catalog, layered rendering, the creator, realtime sync, adding options.
 - [`docs/DEMO_MODE.md`](./docs/DEMO_MODE.md) — what demo mode enables, what it
   never bypasses, identities, the simulation.
 - [`docs/ACTIVITY_ENGINE.md`](./docs/ACTIVITY_ENGINE.md) — how work-tool
   signals resolve into an employee's activity state.
 - [`docs/MEETINGS_AND_TEAMS.md`](./docs/MEETINGS_AND_TEAMS.md) — meeting
   scheduling, room allocation, Teams join flow, future ACS embedding.
-- [`docs/DATABASE_SCHEMA.md`](./docs/DATABASE_SCHEMA.md) — Postgres/Supabase
-  table design.
+- [`docs/DATABASE_SCHEMA.md`](./docs/DATABASE_SCHEMA.md) — Supabase tables,
+  migrations and the backend-only security model.
+- [`docs/AZURE_PAT_AUTH.md`](./docs/AZURE_PAT_AUTH.md) — current sign-in: email +
+  Azure DevOps token, security model, token scopes, renewal, sessions.
+- [`docs/MICROSOFT_AUTH_SETUP.md`](./docs/MICROSOFT_AUTH_SETUP.md) — future Entra
+  sign-in (needs IT approval), the employee seed, failure states.
+- [`docs/AZURE_DEVOPS_SETUP.md`](./docs/AZURE_DEVOPS_SETUP.md) — delegated
+  read scopes, connect flow, scheduled sync, activity mapping.
+- [`docs/PWA_DESKTOP.md`](./docs/PWA_DESKTOP.md) — install, updates, service
+  worker caching rules, Windows auto-start.
 
 ## Design principles
 
@@ -94,10 +127,12 @@ npm run lint           # ESLint (frontend) + tsc --noEmit (backend)
 
 ## Assets & licenses
 
-All visual assets are **generated in code** at runtime: characters,
-furniture, floors, badges and UI shapes are drawn with Canvas 2D in
-`frontend/src/game/rendering/`. No third-party sprites, tilesets or images
-are used.
+All visual assets are **generated in code** at runtime: avatars (layered,
+`frontend/src/game/avatars/`), furniture, floors, badges and UI shapes are
+drawn with Canvas 2D. No third-party sprites, tilesets or images are used.
+The one bitmap is the company's own logo
+(`frontend/src/assets/branding/company-logo.png`, configured in
+`frontend/src/core/config/branding.ts`).
 
 Third-party packages that ship visual/typographic assets:
 

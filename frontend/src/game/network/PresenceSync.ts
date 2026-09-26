@@ -1,5 +1,6 @@
 import {
   SOCKET_EVENTS,
+  type AvatarProfile,
   type Direction,
   type PlayerJoinedPayload,
   type PlayerLeftPayload,
@@ -10,7 +11,7 @@ import {
 import type { OfficeSocket } from './OfficeSocket';
 
 export interface PresenceSyncHandlers {
-  onJoined(employeeId: UUID, position: Vector2, direction: Direction): void;
+  onJoined(employeeId: UUID, position: Vector2, direction: Direction, avatar: AvatarProfile | null): void;
   onLeft(employeeId: UUID): void;
   onLiveEmployeesChanged(employeeIds: UUID[]): void;
 }
@@ -50,7 +51,7 @@ export class PresenceSync {
   private handleJoined = (payload: PlayerJoinedPayload): void => {
     if (payload.employeeId === this.localEmployeeId) return;
     this.live.add(payload.employeeId);
-    this.handlers.onJoined(payload.employeeId, payload.position, payload.direction);
+    this.handlers.onJoined(payload.employeeId, payload.position, payload.direction, payload.avatar ?? null);
     this.handlers.onLiveEmployeesChanged([...this.live]);
   };
 

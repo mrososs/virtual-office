@@ -27,9 +27,10 @@ export class ActivityResolver {
     const now = Date.now();
     const active = signals.filter((signal) => !signal.expiresAt || new Date(signal.expiresAt).getTime() > now);
 
+    // No work signal is not a problem: the person is simply available. (Presence decides whether they are here at all.)
     if (active.length === 0) {
       return {
-        type: 'UNKNOWN',
+        type: 'AVAILABLE',
         source: 'SYSTEM',
         confidence: 0,
         updatedAt: new Date().toISOString(),
@@ -39,15 +40,19 @@ export class ActivityResolver {
     const candidateTypes = [...new Set(active.map((signal) => signal.type))];
     const winningType = this.strategy.resolve(candidateTypes);
 
-    // TODO: when multiple signals share the winning type, pick the one with
-    // highest confidence / most recent `occurredAt` rather than the first match.
-    const winningSignal = active.find((signal) => signal.type === winningType) ?? active[0];
+    // Several signals can share the winning type: prefer the most trusted, then the most recent.
+    const winningSignal =
+      active
+        .filter((signal) => signal.type === winningType)
+        .sort((a, b) => b.confidence - a.confidence || Date.parse(b.occurredAt) - Date.parse(a.occurredAt))[0] ?? active[0];
 
     return {
       type: winningType,
       source: winningSignal.source,
       title: winningSignal.title,
       workItemId: winningSignal.workItemId,
+      pullRequestId: winningSignal.pullRequestId,
+      buildId: winningSignal.buildId,
       confidence: winningSignal.confidence,
       updatedAt: new Date().toISOString(),
     };

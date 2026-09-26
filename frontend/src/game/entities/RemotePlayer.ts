@@ -1,7 +1,7 @@
-import type { Direction, UUID, Vector2 } from '@virtual-office/shared';
+import type { AvatarAppearance, Direction, UUID, Vector2 } from '@virtual-office/shared';
 import type Phaser from 'phaser';
 
-import type { AvatarAppearance } from '@/shared/utils/avatar-appearance';
+import type { AvatarFactory } from '@/game/avatars/AvatarFactory';
 
 import { Player } from './Player';
 
@@ -15,8 +15,8 @@ const SNAP_DISTANCE = 320;
 export class RemotePlayer extends Player {
   private networkTarget: Vector2 | null = null;
 
-  constructor(scene: Phaser.Scene, employeeId: UUID, position: Vector2, appearance: AvatarAppearance) {
-    super(scene, employeeId, position, appearance);
+  constructor(scene: Phaser.Scene, employeeId: UUID, position: Vector2, appearance: AvatarAppearance, avatars: AvatarFactory) {
+    super(scene, employeeId, position, appearance, avatars);
   }
 
   /** Called by PlayerSync when a `player:position` broadcast arrives. */

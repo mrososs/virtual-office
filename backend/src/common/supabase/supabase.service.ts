@@ -2,13 +2,13 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AppConfig } from '../../config/configuration';
+import { DatabaseError } from './database.error';
 
 /**
- * Lazy singleton wrapper around the Supabase JS client. Any module that
- * needs DB access injects `SupabaseService` and calls `.client` rather than
- * constructing its own `createClient(...)` — keeps credentials/config in one
- * place and makes it trivial to swap in a scoped (per-request) client later
- * if row-level security requires it.
+ * Lazy singleton wrapper around the Supabase JS client, created with the
+ * service role key: the backend owns every privileged database operation and
+ * the key never leaves this process. Repositories inject `SupabaseService` and
+ * call `.client` rather than constructing their own `createClient(...)`.
  */
 @Injectable()
 export class SupabaseService implements OnModuleInit {
@@ -18,12 +18,14 @@ export class SupabaseService implements OnModuleInit {
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
-    const { supabase } = this.configService.get<AppConfig>('app')!;
-    if (!supabase.url || !supabase.serviceRoleKey) {
-      this.logger.warn(
-        'SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set — SupabaseService.client will throw until configured.',
-      );
+    if (!this.isConfigured()) {
+      this.logger.warn('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set — database-backed endpoints answer 503 until configured.');
     }
+  }
+
+  isConfigured(): boolean {
+    const { supabase } = this.configService.get<AppConfig>('app')!;
+    return Boolean(supabase.url && supabase.serviceRoleKey);
   }
 
   /** Returns the shared Supabase client, creating it on first access. */
@@ -31,10 +33,10 @@ export class SupabaseService implements OnModuleInit {
     if (!this._client) {
       const { supabase } = this.configService.get<AppConfig>('app')!;
       if (!supabase.url || !supabase.serviceRoleKey) {
-        throw new Error('Supabase is not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing).');
+        throw new DatabaseError('Supabase is not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)');
       }
       this._client = createClient(supabase.url, supabase.serviceRoleKey, {
-        auth: { persistSession: false },
+        auth: { persistSession: false, autoRefreshToken: false },
       });
     }
     return this._client;

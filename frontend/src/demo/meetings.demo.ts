@@ -1,9 +1,9 @@
 import type { Meeting, MeetingParticipant, MeetingResponseStatus, UUID } from '@virtual-office/shared';
 
-import { DEMO_ORGANIZATION_ID, EMP, MEETING, ROOM } from './demo.ids';
+import { DEMO_ORGANIZATION_ID, EMP, MEETING, ROOM, demoEmailFor } from './demo.ids';
 
-/** Seconds after demo start at which Frontend Daily goes live (the timeline uses the same constant). */
-export const FRONTEND_DAILY_STARTS_AT_S = 40;
+/** Seconds after demo start at which the Team Daily goes live (the timeline uses the same constant). */
+export const TEAM_DAILY_STARTS_AT_S = 40;
 
 interface ParticipantSeed {
   employeeId: UUID | null;
@@ -16,7 +16,7 @@ interface ParticipantSeed {
 const person = (employeeId: UUID, displayName: string, response: MeetingResponseStatus = 'ACCEPTED', organizer = false): ParticipantSeed => ({
   employeeId,
   displayName,
-  email: `${displayName.toLowerCase().replace(/\s+/g, '.')}@acme.dev`,
+  email: demoEmailFor(displayName),
   response: organizer ? 'ORGANIZER' : response,
   organizer,
 });
@@ -38,50 +38,50 @@ const toParticipants = (seeds: ParticipantSeed[]): MeetingParticipant[] =>
 export function createDemoMeetings(now: number): Meeting[] {
   const minutes = (value: number) => new Date(now + value * 60_000).toISOString();
   const seconds = (value: number) => new Date(now + value * 1000).toISOString();
-  const frontendDailyStart = now + FRONTEND_DAILY_STARTS_AT_S * 1000;
+  const teamDailyStart = now + TEAM_DAILY_STARTS_AT_S * 1000;
 
   return [
     {
-      id: MEETING.frontendDaily,
+      id: MEETING.teamDaily,
       organizationId: DEMO_ORGANIZATION_ID,
       externalProvider: 'TEAMS',
-      externalMeetingId: 'AAMkAGI2-demo-frontend-daily',
-      title: 'Frontend Daily Standup',
-      startAt: seconds(FRONTEND_DAILY_STARTS_AT_S),
-      endAt: new Date(frontendDailyStart + 15 * 60_000).toISOString(),
+      externalMeetingId: 'AAMkAGI2-demo-team-daily',
+      title: 'Team Daily Standup',
+      startAt: seconds(TEAM_DAILY_STARTS_AT_S),
+      endAt: new Date(teamDailyStart + 15 * 60_000).toISOString(),
       status: 'SCHEDULED',
       joinUrl: null,
       roomId: ROOM.meeting1,
       attendees: toParticipants([
-        person(EMP.rana, 'Rana Mahmoud', 'ORGANIZER', true),
-        person(EMP.mohamed, 'Mohamed Osama'),
+        person(EMP.mohamed, 'Mohamed Osama', 'ORGANIZER', true),
+        person(EMP.rana, 'Rana Mahmoud'),
         person(EMP.ahmed, 'Ahmed Hassan'),
-        { employeeId: null, displayName: 'Lina Farouk (Contractor)', email: 'lina@pixelworks.studio', response: 'TENTATIVE' },
+        { employeeId: null, displayName: 'Lina Farouk (Contractor)', email: 'lina@contractor.example.com', response: 'TENTATIVE' },
       ]),
     },
     {
-      id: MEETING.designReview,
+      id: MEETING.releaseReview,
       organizationId: DEMO_ORGANIZATION_ID,
       externalProvider: 'TEAMS',
-      externalMeetingId: 'AAMkAGI2-demo-design-review',
-      title: 'Design Review',
+      externalMeetingId: 'AAMkAGI2-demo-release-review',
+      title: 'Release Readiness Review',
       startAt: minutes(-10),
       endAt: minutes(35),
       status: 'LIVE',
       joinUrl: null,
       roomId: ROOM.meeting2,
       attendees: toParticipants([
-        person(EMP.sara, 'Sara Ali', 'ORGANIZER', true),
-        person(EMP.mariam, 'Mariam Adel'),
+        person(EMP.mariam, 'Mariam Adel', 'ORGANIZER', true),
+        person(EMP.sara, 'Sara Ali'),
         person(EMP.nour, 'Nour Ahmed', 'TENTATIVE'),
       ]),
     },
     {
-      id: MEETING.backendSync,
+      id: MEETING.apiSync,
       organizationId: DEMO_ORGANIZATION_ID,
       externalProvider: 'TEAMS',
-      externalMeetingId: 'AAMkAGI2-demo-backend-sync',
-      title: 'Backend Sync',
+      externalMeetingId: 'AAMkAGI2-demo-api-sync',
+      title: 'API Sync',
       startAt: minutes(50),
       endAt: minutes(80),
       status: 'SCHEDULED',
@@ -111,8 +111,8 @@ export function createDemoMeetings(now: number): Meeting[] {
         person(EMP.ahmed, 'Ahmed Hassan'),
         person(EMP.youssef, 'Youssef Samir', 'TENTATIVE'),
         person(EMP.omar, 'Omar Khaled'),
-        person(EMP.hana, 'Hana Yasser'),
         person(EMP.sara, 'Sara Ali'),
+        person(EMP.nour, 'Nour Ahmed'),
       ]),
     },
   ];

@@ -1,16 +1,22 @@
 import type { Bounds, UUID, Vector2 } from './common.types.js';
 
+/**
+ * Kinds of area on the floor. Deliberately few: everyday work (coding,
+ * building, testing) happens at the person's own desk, so activities do not
+ * each get a room. Roles point at their home area via `ROLE_CONFIG`.
+ */
 export type RoomType =
+  | 'MANAGEMENT'
+  | 'PROJECT_MANAGEMENT'
+  | 'TEAM_LEAD'
   | 'DEVELOPMENT'
-  | 'DESIGN'
   | 'QA'
-  | 'CODE_REVIEW'
   | 'MEETING'
-  | 'MANAGER'
-  | 'FOCUS'
-  | 'GAME'
-  | 'KITCHEN'
-  | 'LOUNGE'
+  /** Collaboration / code review area. */
+  | 'CODE_REVIEW'
+  /** Game room, kitchen & lounge. */
+  | 'BREAK'
+  /** Reception and other common space; the neutral fallback. */
   | 'GENERAL';
 
 /**

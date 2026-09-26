@@ -1,5 +1,6 @@
 export * from './auth.store';
 export * from './employee.store';
+export * from './avatar.store';
 export * from './room.store';
 export * from './meeting.store';
 export * from './office.store';

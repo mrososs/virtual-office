@@ -16,6 +16,7 @@ import type { DeskOwner } from '@/game/entities/Desk';
 import { CameraManager } from '@/game/managers/CameraManager';
 import { DeskManager } from '@/game/managers/DeskManager';
 import { EmployeeManager } from '@/game/managers/EmployeeManager';
+import { GameStationManager } from '@/game/managers/GameStationManager';
 import { InteractionManager } from '@/game/managers/InteractionManager';
 import { MeetingRoomManager } from '@/game/managers/MeetingRoomManager';
 import { OfficeMapManager } from '@/game/managers/OfficeMapManager';
@@ -30,6 +31,7 @@ import { PresenceSync } from '@/game/network/PresenceSync';
 import { AnimationSystem } from '@/game/systems/AnimationSystem';
 import { AutoMovementSystem } from '@/game/systems/AutoMovementSystem';
 import { CollisionSystem } from '@/game/systems/CollisionSystem';
+import { FootstepSystem } from '@/game/systems/FootstepSystem';
 import { InteractionSystem } from '@/game/systems/InteractionSystem';
 import { MovementSystem } from '@/game/systems/MovementSystem';
 import { PresenceSystem } from '@/game/systems/PresenceSystem';
@@ -46,6 +48,7 @@ interface OfficeWorld {
   rooms: RoomManager;
   meetings: MeetingRoomManager;
   desks: DeskManager;
+  stations: GameStationManager;
   players: PlayerManager;
   employees: EmployeeManager;
   camera: CameraManager;
@@ -55,6 +58,7 @@ interface OfficeWorld {
   animation: AnimationSystem;
   roomSystem: RoomSystem;
   presence: PresenceSystem;
+  footsteps: FootstepSystem;
   realtime: { socket: OfficeSocket; playerSync: PlayerSync; presenceSync: PresenceSync; avatarSync: AvatarSync } | null;
 }
 
@@ -71,6 +75,8 @@ export class OfficeScene extends Phaser.Scene {
   private world: OfficeWorld | null = null;
   private keys: Record<KeyName, Phaser.Input.Keyboard.Key> | null = null;
   private failed = false;
+  /** False while a full-screen game has the keyboard. */
+  private inputEnabled = true;
   private disposeDebugHandle: () => void = () => undefined;
 
   constructor() {
@@ -104,10 +110,12 @@ export class OfficeScene extends Phaser.Scene {
 
       const local = world.players.getLocalPlayer();
       if (local) {
+        world.footsteps.update(local);
         world.interaction.updateProximity(delta, {
           local,
           avatars: world.employees.avatars(),
           desks: world.desks.all(),
+          stationNear: (point) => world.stations.nearest(point),
           currentRoom: world.rooms.roomAt(local.position),
           deskLabel: (desk) => world.desks.labelFor(desk),
         });
@@ -176,6 +184,12 @@ export class OfficeScene extends Phaser.Scene {
         const world = this.world;
         if (world) world.autoMovement.cancel(world.localEmployeeId, 'cancelled');
       },
+      [GAME_EVENTS.SET_GAME_STATION]: (view) => this.world?.stations.apply(view),
+      [GAME_EVENTS.SET_LOCAL_INPUT_ENABLED]: ({ enabled }) => {
+        this.inputEnabled = enabled;
+        const world = this.world;
+        if (!enabled && world) world.autoMovement.cancel(world.localEmployeeId, 'cancelled');
+      },
     };
   }
 
@@ -210,6 +224,8 @@ export class OfficeScene extends Phaser.Scene {
     }
     const desks = new DeskManager(this);
     desks.load(payload.desks, owners);
+    const stations = new GameStationManager(this);
+    stations.load(payload.map);
 
     let roomSystem: RoomSystem | null = null;
     const employees = new EmployeeManager(this, {
@@ -240,6 +256,7 @@ export class OfficeScene extends Phaser.Scene {
       rooms,
       meetings,
       desks,
+      stations,
       players,
       employees,
       camera: new CameraManager(this),
@@ -249,11 +266,12 @@ export class OfficeScene extends Phaser.Scene {
       animation: new AnimationSystem(this),
       roomSystem,
       presence: new PresenceSystem(this, (id) => this.findAvatar(world, id)),
+      footsteps: new FootstepSystem(),
       realtime: null,
     };
     this.world = world;
 
-    new InteractionManager(interaction).registerStatic({ desks: desks.all(), rooms: roomVisuals, furniture: map.furniture });
+    new InteractionManager(interaction).registerStatic({ desks: desks.all(), rooms: roomVisuals, furniture: map.furniture, stations: stations.all() });
     employees.spawnAll(payload.employees);
     for (const state of [payload.localPlayer, ...payload.employees]) world.presence.apply(state.status);
     world.camera.setup(payload.map.width, payload.map.height, local.body, payload.zoom);
@@ -340,6 +358,11 @@ export class OfficeScene extends Phaser.Scene {
       const seat = world.desks.seatOf(request.deskId);
       return seat ? { position: { x: seat.x, y: seat.y }, facing: seat.facing } : null;
     }
+    if (request.kind === 'STATION') {
+      const spots = world.stations.get(request.stationId)?.playerSpots ?? [];
+      const spot = spots[request.slot] ?? spots[0];
+      return spot ? { position: { x: spot.x, y: spot.y }, facing: spot.facing } : null;
+    }
     const avatar = world.employees.get(request.employeeId);
     if (!avatar || avatar.isHidden) return null;
     const room = world.rooms.roomAt(avatar.position);
@@ -357,13 +380,13 @@ export class OfficeScene extends Phaser.Scene {
       false,
     ) as Record<KeyName, Phaser.Input.Keyboard.Key>;
     keyboard.on('keydown-E', () => {
-      if (!isTypingInForm()) this.world?.interaction.triggerCurrent();
+      if (this.inputEnabled && !isTypingInForm()) this.world?.interaction.triggerCurrent();
     });
   }
 
   private readInput(): MovementInputState {
     const keys = this.keys;
-    if (!keys || isTypingInForm()) return NO_MOVEMENT_INPUT;
+    if (!keys || !this.inputEnabled || isTypingInForm()) return NO_MOVEMENT_INPUT;
     return {
       up: keys.w.isDown || keys.up.isDown,
       down: keys.s.isDown || keys.down.isDown,
@@ -403,6 +426,7 @@ export class OfficeScene extends Phaser.Scene {
     world.employees.destroy();
     world.players.destroy();
     world.desks.clear();
+    world.stations.clear();
     world.rooms.clear();
     world.map.destroy();
     world.collision.destroy();

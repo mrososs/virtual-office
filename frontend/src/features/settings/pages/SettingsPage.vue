@@ -8,6 +8,7 @@ import { useOfficeStore } from '@/stores/office.store';
 
 import IntegrationsSummaryCard from '../components/IntegrationsSummaryCard.vue';
 import ProfileCard from '../components/ProfileCard.vue';
+import SoundSettingsCard from '../components/SoundSettingsCard.vue';
 
 const authStore = useAuthStore();
 const officeStore = useOfficeStore();
@@ -29,6 +30,7 @@ const sessionExpiry = computed(() => (authStore.sessionExpiresAt ? new Date(auth
 
       <ProfileCard />
       <IntegrationsSummaryCard v-if="!authStore.isDemoSession" />
+      <SoundSettingsCard />
       <DesktopAppCard />
 
       <section class="vo-panel p-5">

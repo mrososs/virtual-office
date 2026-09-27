@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia';
 
-import type { AppNotification } from '@/features/notifications/notification.types';
+import { soundManager, type SoundId } from '@/core/audio';
+import type { AppNotification, NotificationSound } from '@/features/notifications/notification.types';
+
+const SOUND_OF: Record<NotificationSound, SoundId> = { NOTIFY: 'notify', ALERT: 'notify-alert', SUCCESS: 'ui-success' };
 
 const TOAST_LIMIT = 3;
 const INBOX_LIMIT = 40;
@@ -35,6 +38,7 @@ export const useNotificationStore = defineStore('notification', {
       if (options.toast !== false) {
         this.toastIds = [id, ...this.toastIds].slice(0, TOAST_LIMIT);
       }
+      if (notification.sound) soundManager.play(SOUND_OF[notification.sound]);
       return id;
     },
 

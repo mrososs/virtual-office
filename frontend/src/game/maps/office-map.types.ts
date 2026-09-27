@@ -70,6 +70,7 @@ export type FurnitureKind =
   | 'WATER_COOLER'
   | 'PING_PONG'
   | 'FOOSBALL'
+  | 'GAME_TABLE'
   | 'ARCADE'
   | 'RECEPTION_DESK'
   | 'FOCUS_POD'
@@ -90,6 +91,19 @@ export interface FurniturePlacement {
   variant?: string;
   /** Screens in meeting rooms relay clicks as "open this room's meeting". */
   meetingRoomId?: UUID;
+  /** Furniture that is a game station (e.g. the ping pong table) relays clicks as "open this station". */
+  stationId?: string;
+}
+
+/**
+ * A game station (shared `GAME_STATIONS`) on this floor. Its footprint is the
+ * furniture placement carrying the same `stationId`; its occupancy comes from
+ * the server — the map only places it.
+ */
+export interface GameStationLayout {
+  stationId: string;
+  /** Where each player stands, in seat order (first joiner = first spot). */
+  playerSpots: MapSpot[];
 }
 
 export interface MapSpot {
@@ -143,6 +157,8 @@ export interface OfficeMapDefinition {
   doors: DoorPlacement[];
   furniture: FurniturePlacement[];
   roomLayouts: RoomLayout[];
+  /** Game Room stations on this floor. */
+  stations: GameStationLayout[];
   floorTexts: FloorText[];
   signage?: OfficeSignage;
   playerSpawn: MapSpot;

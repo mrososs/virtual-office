@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarDays, GitPullRequest, Hammer, ListChecks, MapPin, Wifi } from 'lucide-vue-next';
+import { CalendarDays, Gamepad2, GitPullRequest, Hammer, ListChecks, MapPin, Wifi } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 
 import type { FeedItem, FeedItemKind, FeedTone } from '@/features/activity/activity-feed.types';
@@ -18,6 +18,7 @@ const KIND_ICON: Record<FeedItemKind, typeof CalendarDays> = {
   MEETING: CalendarDays,
   PRESENCE: Wifi,
   LOCATION: MapPin,
+  GAME: Gamepad2,
 };
 
 const TONE_COLOR: Record<FeedTone, string> = {

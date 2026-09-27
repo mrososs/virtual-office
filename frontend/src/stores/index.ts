@@ -9,3 +9,4 @@ export * from './ui.store';
 export * from './notification.store';
 export * from './feed.store';
 export * from './demo.store';
+export * from './game.store';

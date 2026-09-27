@@ -40,6 +40,8 @@ export const GAME_EVENTS = {
   LIVE_EMPLOYEES_CHANGED: 'realtime:live_employees_changed',
   /** A connected teammate's avatar arrived over the socket (join or change). Vue stores it; it flows back as SET_EMPLOYEE_APPEARANCE. */
   REMOTE_AVATAR_RECEIVED: 'realtime:avatar_received',
+  /** A game station (ping pong table) was clicked or used with E. */
+  STATION_CLICKED: 'station:clicked',
 
   /* Vue -> Phaser ----------------------------------------------------- */
   OFFICE_INIT: 'office:init',
@@ -55,6 +57,10 @@ export const GAME_EVENTS = {
   SET_ZOOM: 'camera:set_zoom',
   NAVIGATE_LOCAL_PLAYER: 'player:navigate',
   CANCEL_LOCAL_NAVIGATION: 'player:cancel_navigation',
+  /** Server-authoritative station occupancy, formatted by Vue for the chip over the station. */
+  SET_GAME_STATION: 'station:set_state',
+  /** Off while a full-screen game has the keyboard: the avatar ignores WASD/arrows and E. */
+  SET_LOCAL_INPUT_ENABLED: 'player:set_input_enabled',
 } as const;
 
 export type GameEventName = (typeof GAME_EVENTS)[keyof typeof GAME_EVENTS];
@@ -62,9 +68,19 @@ export type GameEventName = (typeof GAME_EVENTS)[keyof typeof GAME_EVENTS];
 export type InteractionSource = 'pointer' | 'keyboard';
 
 export interface InteractionTarget {
-  kind: 'EMPLOYEE' | 'DESK' | 'ROOM';
+  kind: 'EMPLOYEE' | 'DESK' | 'ROOM' | 'STATION';
   id: UUID;
   label: string;
+}
+
+export type GameStationTone = 'free' | 'waiting' | 'busy';
+
+/** Presentation-ready station chip ("PING PONG · 1/2 Waiting"). Vue formats it; Phaser only draws it. */
+export interface GameStationView {
+  stationId: string;
+  title: string;
+  detail: string;
+  tone: GameStationTone;
 }
 
 /** Presentation-ready status for one avatar. Vue formats it; Phaser only draws it. */
@@ -128,7 +144,9 @@ export interface OfficeInitPayload {
 export type NavigationRequest =
   | { kind: 'ROOM'; roomId: UUID }
   | { kind: 'DESK'; deskId: UUID }
-  | { kind: 'EMPLOYEE'; employeeId: UUID };
+  | { kind: 'EMPLOYEE'; employeeId: UUID }
+  /** A player spot at a game station; `slot` = seat order (the first joiner stands at slot 0). */
+  | { kind: 'STATION'; stationId: string; slot: number };
 
 /**
  * Maps every event name to its payload shape. Extend this whenever a new
@@ -155,6 +173,7 @@ export type GameEventPayloadMap = {
   [GAME_EVENTS.REALTIME_STATUS_CHANGED]: { status: RealtimeConnectionStatus };
   [GAME_EVENTS.LIVE_EMPLOYEES_CHANGED]: { employeeIds: UUID[] };
   [GAME_EVENTS.REMOTE_AVATAR_RECEIVED]: { employeeId: UUID; avatar: AvatarProfile };
+  [GAME_EVENTS.STATION_CLICKED]: { stationId: string; source: InteractionSource };
 
   [GAME_EVENTS.OFFICE_INIT]: OfficeInitPayload;
   [GAME_EVENTS.RESET_OFFICE]: { employees: EmployeeWorldState[]; localPlayer: EmployeeStatusView; roomMeetings: RoomMeetingState[] };
@@ -169,4 +188,6 @@ export type GameEventPayloadMap = {
   [GAME_EVENTS.SET_ZOOM]: { zoom: number };
   [GAME_EVENTS.NAVIGATE_LOCAL_PLAYER]: { request: NavigationRequest; label: string };
   [GAME_EVENTS.CANCEL_LOCAL_NAVIGATION]: void;
+  [GAME_EVENTS.SET_GAME_STATION]: GameStationView;
+  [GAME_EVENTS.SET_LOCAL_INPUT_ENABLED]: { enabled: boolean };
 };

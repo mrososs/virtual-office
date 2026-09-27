@@ -25,13 +25,13 @@ export class InteractiveObjectEntity {
       .setAngle(normalizeAngle(placement.angle))
       .setDepth(spec.seat ? bounds.y : bounds.y + bounds.height);
 
-    if (placement.meetingRoomId) {
+    if (this.isInteractive) {
       this.image.setInteractive({ useHandCursor: true });
     }
   }
 
   get isInteractive(): boolean {
-    return this.placement.meetingRoomId !== undefined;
+    return this.placement.meetingRoomId !== undefined || this.placement.stationId !== undefined;
   }
 
   destroy(): void {

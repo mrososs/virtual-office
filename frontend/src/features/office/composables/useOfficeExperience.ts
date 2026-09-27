@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, shallowRef, watch } from 'vue';
 import { runtimeEnv } from '@/core/config';
 import { socketClient } from '@/core/socket';
 import { useOfficeNarrator } from '@/features/activity/composables/useOfficeNarrator';
+import { useGameRoomSync } from '@/features/games/composables/useGameRoomSync';
 import { applyOfficeSnapshot } from '@/features/office/data/apply-office-snapshot';
 import { resolveOfficeDataSource } from '@/features/office/data/office-data-source';
 import { GAME_EVENTS, type RealtimeOptions } from '@/game/bridge';
@@ -11,6 +12,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useOfficeStore } from '@/stores/office.store';
 
 import { useOfficeLiveUpdates } from './useOfficeLiveUpdates';
+import { useOfficeSounds } from './useOfficeSounds';
 import { useOfficeWorldSync } from './useOfficeWorldSync';
 
 export type OfficePhase = 'loading' | 'starting' | 'ready' | 'error';
@@ -28,6 +30,8 @@ export function useOfficeExperience() {
   const authStore = useAuthStore();
   const world = useOfficeWorldSync();
   useOfficeNarrator();
+  useOfficeSounds();
+  useGameRoomSync();
   if (!runtimeEnv.demoMode) useOfficeLiveUpdates();
 
   const gameReady = shallowRef(false);

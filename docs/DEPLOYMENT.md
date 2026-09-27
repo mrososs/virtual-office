@@ -80,6 +80,15 @@ vercel deploy --prebuilt --prod
 A plain `vercel deploy` uploads source and does not honor `.gitignore`;
 `.vercelignore` keeps `.env` files and the backend out if someone runs it.
 
+## Game Room
+
+The API coordinates game tables over the same socket (low-frequency events
+only) and keeps table occupancy and private room links **in memory — the
+service must run as a single instance** (see [`GAME_ROOM.md`](./GAME_ROOM.md)).
+It makes one outbound HTTPS call per chess table opened
+(`POST https://lichess.org/api/challenge/open`, no credentials); no other
+provider is contacted server-side. A redeploy frees every table.
+
 ## Database
 
 Production uses the same Supabase project as local development (there is only

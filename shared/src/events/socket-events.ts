@@ -3,10 +3,15 @@ import type {
   Direction,
   EmployeeActivity,
   EmployeePresence,
+  GameErrorCode,
+  GameSession,
+  GameStationState,
   ISODateString,
   Meeting,
   BuildStatus,
   PlayerControlMode,
+  PongInput,
+  PongState,
   PullRequestStatus,
   RoomOccupancy,
   UUID,
@@ -51,6 +56,28 @@ export const SOCKET_EVENTS = {
 
   /** Server → one client: its session was signed out or expired; the socket closes right after. */
   SESSION_ENDED: 'session:ended',
+
+  /* Game Room — identity always comes from the authenticated socket, never from a payload. */
+  /** Client → server: send me every station and my current match (after each (re)connect). */
+  GAME_SYNC: 'game:sync',
+  GAME_JOIN_TABLE: 'game:join_table',
+  GAME_LEAVE_TABLE: 'game:leave_table',
+  /** Client → server (host of an external game): the room link or code they created on the provider's site. */
+  GAME_SHARE_ROOM: 'game:share_room',
+  /** Client → server (internal Pong only): Start (match found) or Rematch (match over). */
+  GAME_READY: 'game:ready',
+  /** Client → server (internal Pong only): paddle direction, on change plus a slow heartbeat. */
+  GAME_INPUT: 'game:input',
+  /** Server → one client: every station (reply to game:sync). */
+  GAME_STATIONS: 'game:stations',
+  /** Server → office: one station's occupancy changed. */
+  GAME_STATION_UPDATED: 'game:station_updated',
+  /** Server → the players: their match changed (found, countdown, score, paused, over), or null = no match. */
+  GAME_SESSION: 'game:session',
+  /** Server → the players (internal Pong only): authoritative ball and paddle snapshot while playing. */
+  GAME_STATE: 'game:state',
+  /** Server → one employee: a game request was refused, or they were released from a table. */
+  GAME_ERROR: 'game:error',
 } as const;
 
 export type SocketEventName = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];
@@ -175,6 +202,39 @@ export interface SessionEndedPayload {
   reason: 'SIGNED_OUT' | 'EXPIRED' | 'DISABLED';
 }
 
+export interface GameStationRequestPayload {
+  stationId: string;
+}
+
+export interface GameShareRoomPayload {
+  stationId: string;
+  /** The invite link (MANUAL_INVITE_LINK) or room code (ROOM_CODE). Validated against the provider allowlist. */
+  invite: string;
+}
+
+export interface GameReadyPayload {
+  sessionId: string;
+}
+
+export type GameInputPayload = PongInput;
+
+export interface GameStationsPayload {
+  stations: GameStationState[];
+}
+
+export type GameStationUpdatedPayload = GameStationState;
+
+export interface GameSessionPayload {
+  session: GameSession | null;
+}
+
+export type GameStatePayload = PongState;
+
+export interface GameErrorPayload {
+  code: GameErrorCode;
+  message: string;
+}
+
 /* ---------------------------------------------------------------------- */
 /* socket.io typed maps                                                    */
 /* ---------------------------------------------------------------------- */
@@ -203,6 +263,12 @@ export interface ServerToClientEvents {
   [SOCKET_EVENTS.BUILD_UPDATED]: (payload: BuildUpdatedPayload) => void;
   [SOCKET_EVENTS.WORK_SYNCED]: (payload: WorkSyncedPayload) => void;
   [SOCKET_EVENTS.SESSION_ENDED]: (payload: SessionEndedPayload) => void;
+
+  [SOCKET_EVENTS.GAME_STATIONS]: (payload: GameStationsPayload) => void;
+  [SOCKET_EVENTS.GAME_STATION_UPDATED]: (payload: GameStationUpdatedPayload) => void;
+  [SOCKET_EVENTS.GAME_SESSION]: (payload: GameSessionPayload) => void;
+  [SOCKET_EVENTS.GAME_STATE]: (payload: GameStatePayload) => void;
+  [SOCKET_EVENTS.GAME_ERROR]: (payload: GameErrorPayload) => void;
 }
 
 export interface ClientToServerEvents {
@@ -210,6 +276,13 @@ export interface ClientToServerEvents {
   [SOCKET_EVENTS.OFFICE_LEAVE]: (payload: OfficeLeavePayload) => void;
   [SOCKET_EVENTS.PLAYER_MOVE]: (payload: PlayerMovePayload) => void;
   [SOCKET_EVENTS.PLAYER_AVATAR_UPDATE]: (payload: PlayerAvatarUpdatedPayload) => void;
+
+  [SOCKET_EVENTS.GAME_SYNC]: () => void;
+  [SOCKET_EVENTS.GAME_JOIN_TABLE]: (payload: GameStationRequestPayload) => void;
+  [SOCKET_EVENTS.GAME_LEAVE_TABLE]: (payload: GameStationRequestPayload) => void;
+  [SOCKET_EVENTS.GAME_SHARE_ROOM]: (payload: GameShareRoomPayload) => void;
+  [SOCKET_EVENTS.GAME_READY]: (payload: GameReadyPayload) => void;
+  [SOCKET_EVENTS.GAME_INPUT]: (payload: GameInputPayload) => void;
 }
 
 export interface InterServerEvents {

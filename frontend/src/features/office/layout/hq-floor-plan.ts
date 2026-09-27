@@ -1,4 +1,17 @@
-import { HQ_DESK as DESK, HQ_ROOM as ROOM, HQ_ROOM_TYPES, type Bounds, type Desk, type Direction, type HqDeskId, type HqRoomId, type Office, type OfficeFloor, type Room } from '@virtual-office/shared';
+import {
+  GAME_STATION,
+  HQ_DESK as DESK,
+  HQ_ROOM as ROOM,
+  HQ_ROOM_TYPES,
+  type Bounds,
+  type Desk,
+  type Direction,
+  type HqDeskId,
+  type HqRoomId,
+  type Office,
+  type OfficeFloor,
+  type Room,
+} from '@virtual-office/shared';
 
 import type {
   DoorPlacement,
@@ -7,6 +20,7 @@ import type {
   FurnitureAngle,
   FurnitureKind,
   FurniturePlacement,
+  GameStationLayout,
   MapSpot,
   OfficeMapDefinition,
   RoomLayout,
@@ -144,8 +158,10 @@ const ROOM_SEEDS: RoomSeed[] = [
     spots: [
       spot(48.85, 3.8, 'right'),
       spot(54.15, 3.8, 'left'),
-      spot(57.6, 3.95, 'down'),
-      spot(57.6, 6.05, 'up'),
+      spot(56.45, 3.4, 'right'),
+      spot(58.75, 3.4, 'left'),
+      spot(56.45, 5.75, 'right'),
+      spot(58.75, 5.75, 'left'),
       spot(49.3, 8.4, 'down'),
       spot(51, 8.75, 'down'),
       spot(52.7, 8.4, 'down'),
@@ -369,14 +385,19 @@ function buildFurniture(): FurniturePlacement[] {
 
   // Game Room
   place('TV_SCREEN', 52.2, 0.45);
-  place('PING_PONG', 51.5, 3.8);
+  place('PING_PONG', PING_PONG_AT[0], PING_PONG_AT[1], 0, { stationId: GAME_STATION.pong01 });
   place('ARCADE', 56.9, 0.85, 0, { variant: 'PINK' });
   place('ARCADE', 58.4, 0.85, 0, { variant: 'CYAN' });
-  place('FOOSBALL', 57.6, 5);
+  // Board-game tables down the right-hand wall, a stool at each end.
+  for (const [stationId, variant, row] of BOARD_TABLES) {
+    place('GAME_TABLE', BOARD_TABLE_COLUMN, row, 0, { variant, stationId });
+    place('STOOL', BOARD_TABLE_COLUMN - BOARD_TABLE_REACH, row);
+    place('STOOL', BOARD_TABLE_COLUMN + BOARD_TABLE_REACH, row);
+  }
   place('BEANBAG', 49.3, 8.4, 0, { variant: 'CORAL' });
   place('BEANBAG', 51, 8.75, 0, { variant: 'YELLOW' });
   place('BEANBAG', 52.7, 8.4, 0, { variant: 'VIOLET' });
-  place('PLANT_LARGE', 59.2, 9.15);
+  place('PLANT_LARGE', 47.75, 9.2);
 
   // Corridor
   place('PLANT_SMALL', 0.7, 11.5);
@@ -451,6 +472,27 @@ function buildFurniture(): FurniturePlacement[] {
   place('WATER_COOLER', 17.65, 31.6);
 
   return items;
+}
+
+/** The Game Room's ping pong table: a player at each end (the Game Room's first two spots). */
+const PING_PONG_AT: [number, number] = [51.5, 3.8];
+/** Board-game tables: one column along the Game Room's right wall, a player seated at each end. */
+const BOARD_TABLE_COLUMN = 57.6;
+const BOARD_TABLE_REACH = 1.15;
+const BOARD_TABLES: ReadonlyArray<[stationId: string, variant: string, row: number]> = [
+  [GAME_STATION.chess01, 'CHESS', 3.4],
+  [GAME_STATION.ticTacToe01, 'TICTACTOE', 5.75],
+  [GAME_STATION.connectFour01, 'CONNECT4', 8.1],
+];
+
+function buildStations(): GameStationLayout[] {
+  return [
+    { stationId: GAME_STATION.pong01, playerSpots: [spot(48.85, 3.8, 'right'), spot(54.15, 3.8, 'left')] },
+    ...BOARD_TABLES.map(([stationId, , row]) => ({
+      stationId,
+      playerSpots: [spot(BOARD_TABLE_COLUMN - BOARD_TABLE_REACH, row, 'right'), spot(BOARD_TABLE_COLUMN + BOARD_TABLE_REACH, row, 'left')],
+    })),
+  ];
 }
 
 function buildRugs(): RugPlacement[] {
@@ -536,6 +578,7 @@ export function createHqFloorPlan({ organizationId, officeId, floorId }: HqFloor
     doors,
     furniture: buildFurniture(),
     roomLayouts,
+    stations: buildStations(),
     floorTexts: [{ text: 'WELCOME', x: X(25.5), y: Y(29.45), size: 15, color: '#8a93a6', alpha: 0.6 }],
     // Mounted on the reception wall, centered over the reception desk (whose top edge is ~49 px below the wall).
     signage: { companySign: { x: X(21), y: Y(26) + 19, width: 136, height: 32 } },

@@ -102,6 +102,13 @@ class SocketClient {
     return this.socket;
   }
 
+  /** Sends on the office socket (the game layer owns its lifecycle). Returns false while it is not connected. */
+  emit<K extends keyof ClientToServerEvents>(event: K, ...args: Parameters<ClientToServerEvents[K]>): boolean {
+    if (!this.socket?.connected) return false;
+    this.socket.emit(event, ...args);
+    return true;
+  }
+
   /** Subscribes to a server event now and on every future socket. Returns the unsubscribe function. */
   on<K extends ServerEvent>(event: K, handler: ServerToClientEvents[K]): () => void {
     const handlers = this.listeners.get(event) ?? new Set();

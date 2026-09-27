@@ -1,6 +1,13 @@
 import type { ISODateString, UUID } from '@virtual-office/shared';
 
-export type NotificationKind = 'MEETING' | 'BUILD' | 'PULL_REQUEST' | 'LOCATION' | 'SYSTEM';
+export type NotificationKind = 'MEETING' | 'BUILD' | 'PULL_REQUEST' | 'LOCATION' | 'GAME' | 'SYSTEM';
+
+/**
+ * Optional chime. Producers set it only for changes that matter to this
+ * person (a review requested from them, a failed build) — never for routine
+ * syncs; the SoundManager also throttles repeats.
+ */
+export type NotificationSound = 'NOTIFY' | 'ALERT' | 'SUCCESS';
 
 export type NotificationTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -18,5 +25,6 @@ export interface AppNotification {
   title: string;
   body?: string;
   action?: NotificationAction;
+  sound?: NotificationSound;
   read: boolean;
 }

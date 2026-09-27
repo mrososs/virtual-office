@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia';
 
 import EmployeeDetailsDrawer from '@/features/employees/components/EmployeeDetailsDrawer.vue';
+import GameStationPanel from '@/features/games/game-room/GameStationPanel.vue';
 import MeetingDetailsDrawer from '@/features/meetings/components/MeetingDetailsDrawer.vue';
 import { useUiStore } from '@/stores/ui.store';
 
@@ -25,6 +26,7 @@ const { selection } = storeToRefs(uiStore);
       <MeetingDetailsDrawer v-else-if="selection?.kind === 'meeting'" :key="selection.id" :meeting-id="selection.id" class="pointer-events-auto" @close="uiStore.clearSelection()" />
       <RoomDetailsPanel v-else-if="selection?.kind === 'room'" :key="selection.id" :room-id="selection.id" class="pointer-events-auto" @close="uiStore.clearSelection()" />
       <DeskDetailsPanel v-else-if="selection?.kind === 'desk'" :key="selection.id" :desk-id="selection.id" class="pointer-events-auto" @close="uiStore.clearSelection()" />
+      <GameStationPanel v-else-if="selection?.kind === 'station'" :key="selection.id" :station-id="selection.id" class="pointer-events-auto" @close="uiStore.clearSelection()" />
     </Transition>
   </div>
 </template>

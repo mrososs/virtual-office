@@ -24,6 +24,7 @@ import { AzureDevOpsModule } from './modules/azure-devops/azure-devops.module';
 import { MicrosoftModule } from './modules/microsoft/microsoft.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { DemoModule } from './modules/demo/demo.module';
+import { GamesModule } from './modules/games/games.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { DemoModule } from './modules/demo/demo.module';
     PresenceModule,
     ActivitiesModule,
     RealtimeModule,
+    GamesModule,
     AzureDevOpsModule,
     MicrosoftModule,
     WebhooksModule,

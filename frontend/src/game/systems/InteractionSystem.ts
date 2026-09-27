@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { GAME_EVENTS, gameBridge, type InteractionTarget } from '@/game/bridge';
 import type { DeskEntity } from '@/game/entities/Desk';
 import type { EmployeeAvatar } from '@/game/entities/EmployeeAvatar';
+import type { GameStationEntity } from '@/game/entities/GameStation';
 import type { InteractiveObjectEntity } from '@/game/entities/InteractiveObject';
 import { distance } from '@/game/maps/map-geometry';
 import type { RoomVisual } from '@/game/rooms/RoomVisual';
@@ -18,6 +19,8 @@ export interface ProximityContext {
   local: EmployeeAvatar;
   avatars: Iterable<EmployeeAvatar>;
   desks: Iterable<DeskEntity>;
+  /** The game station within reach of a point, if any. It wins over people standing at it (you came to play). */
+  stationNear: (point: { x: number; y: number }) => GameStationEntity | null;
   currentRoom: RoomVisual | undefined;
   deskLabel: (desk: DeskEntity) => string;
 }
@@ -65,9 +68,13 @@ export class InteractionSystem {
   }
 
   registerFurniture(entity: InteractiveObjectEntity): void {
-    const roomId = entity.placement.meetingRoomId;
-    if (!roomId) return;
-    entity.image.on('pointerdown', () => gameBridge.emit(GAME_EVENTS.MEETING_JOIN_REQUESTED, { roomId }));
+    const { meetingRoomId: roomId, stationId } = entity.placement;
+    if (roomId) entity.image.on('pointerdown', () => gameBridge.emit(GAME_EVENTS.MEETING_JOIN_REQUESTED, { roomId }));
+    if (stationId) entity.image.on('pointerdown', () => gameBridge.emit(GAME_EVENTS.STATION_CLICKED, { stationId, source: 'pointer' }));
+  }
+
+  registerStation(station: GameStationEntity): void {
+    station.chip.on('pointerdown', () => gameBridge.emit(GAME_EVENTS.STATION_CLICKED, { stationId: station.stationId, source: 'pointer' }));
   }
 
   /** Picks the single best thing the local player could interact with ("Press E"). */
@@ -89,7 +96,11 @@ export class InteractionSystem {
     }
 
     let next: InteractionTarget | null = null;
-    if (bestAvatar) {
+    const station = context.stationNear(origin);
+    if (station) {
+      next = { kind: 'STATION', id: station.stationId, label: station.stationId };
+      bestAvatar = null;
+    } else if (bestAvatar) {
       next = { kind: 'EMPLOYEE', id: bestAvatar.employeeId, label: bestAvatar.status.displayName };
     } else {
       let bestDesk: DeskEntity | null = null;
@@ -122,6 +133,7 @@ export class InteractionSystem {
     const target = this.current;
     if (!target) return;
     if (target.kind === 'EMPLOYEE') this.emitEmployee(target.id, 'keyboard');
+    else if (target.kind === 'STATION') gameBridge.emit(GAME_EVENTS.STATION_CLICKED, { stationId: target.id, source: 'keyboard' });
     else if (target.kind === 'DESK') gameBridge.emit(GAME_EVENTS.DESK_CLICKED, { deskId: target.id, source: 'keyboard' });
     else gameBridge.emit(GAME_EVENTS.ROOM_CLICKED, { roomId: target.id, source: 'keyboard' });
   }

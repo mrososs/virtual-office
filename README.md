@@ -107,6 +107,8 @@ npm run preview -w frontend   # serve the built PWA on http://localhost:4173 (AP
   sign-in (needs IT approval), the employee seed, failure states.
 - [`docs/AZURE_DEVOPS_SETUP.md`](./docs/AZURE_DEVOPS_SETUP.md) — delegated
   read scopes, connect flow, scheduled sync, activity mapping.
+- [`docs/GAME_ROOM.md`](./docs/GAME_ROOM.md) — Game Room stations, external game
+  providers (Lichess, papergames.io, PixoPlays), link security, sounds
 - [`docs/PWA_DESKTOP.md`](./docs/PWA_DESKTOP.md) — install, updates, service
   worker caching rules, Windows auto-start.
 

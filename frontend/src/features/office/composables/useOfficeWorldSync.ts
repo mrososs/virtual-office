@@ -21,6 +21,7 @@ import { useGameBridgeEvent } from '@/shared/composables';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDemoStore } from '@/stores/demo.store';
 import { useEmployeeStore } from '@/stores/employee.store';
+import { useGameStore } from '@/stores/game.store';
 import { useMeetingStore } from '@/stores/meeting.store';
 import { useOfficeStore } from '@/stores/office.store';
 import { useRoomStore } from '@/stores/room.store';
@@ -46,6 +47,7 @@ export function useOfficeWorldSync() {
   const uiStore = useUiStore();
   const authStore = useAuthStore();
   const demoStore = useDemoStore();
+  const gameStore = useGameStore();
   const { statusLineOf } = useStatusLookups();
 
   const connected = shallowRef(false);
@@ -57,12 +59,14 @@ export function useOfficeWorldSync() {
   const localEmployeeId = computed(() => authStore.currentEmployeeId);
 
   function statusView(employee: Employee): EmployeeStatusView {
+    // At a game table: temporary context over the avatar only — the stored activity (Azure work) is untouched.
+    const game = employee.presence.status === 'OFFLINE' ? null : gameStore.contextLabelOf(employee.id);
     return {
       employeeId: employee.id,
       displayName: employee.displayName,
       presence: employee.presence.status,
-      activity: employee.activity.type,
-      statusLine: statusLineOf(employee),
+      activity: game ? 'BREAK' : employee.activity.type,
+      statusLine: game ?? statusLineOf(employee),
     };
   }
 

@@ -471,6 +471,64 @@ export const FURNITURE_CATALOG: Record<FurnitureKind, FurnitureSpec> = {
       }
     },
   },
+  /** A small square board-game table; the variant is the board on top (CHESS, TICTACTOE, CONNECT4). */
+  GAME_TABLE: {
+    width: 46,
+    height: 40,
+    blocking: true,
+    seat: false,
+    defaultVariant: 'CHESS',
+    draw(ctx, variant, scale) {
+      withShadow(ctx, scale, () => fillRoundRect(ctx, 0, 0, 46, 40, 5, WOOD_DARK), 3, 2);
+      fillRoundRect(ctx, 2, 2, 42, 36, 4, WOOD);
+      if (variant === 'TICTACTOE') {
+        fillRoundRect(ctx, 9, 6, 28, 28, 2, WHITE);
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.2;
+        for (const offset of [9.33, 18.67]) {
+          ctx.beginPath();
+          ctx.moveTo(9 + offset, 8);
+          ctx.lineTo(9 + offset, 32);
+          ctx.moveTo(11, 6 + offset);
+          ctx.lineTo(35, 6 + offset);
+          ctx.stroke();
+        }
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = '#6366f1';
+        for (const [cx, cy] of [[13.7, 10.7], [32.3, 29.3]] as const) {
+          ctx.beginPath();
+          ctx.moveTo(cx - 2.6, cy - 2.6);
+          ctx.lineTo(cx + 2.6, cy + 2.6);
+          ctx.moveTo(cx + 2.6, cy - 2.6);
+          ctx.lineTo(cx - 2.6, cy + 2.6);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(23, 20, 3, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (variant === 'CONNECT4') {
+        fillRoundRect(ctx, 7, 7, 32, 26, 3, '#2563eb');
+        const colors = ['#1e3a8a', '#1e3a8a', '#1e3a8a', '#1e3a8a', '#1e3a8a', '#facc15', '#1e3a8a', '#ef4444', '#facc15', '#1e3a8a', '#ef4444', '#facc15', '#ef4444', '#facc15', '#ef4444', '#ef4444'];
+        for (let row = 0; row < 4; row += 1) {
+          for (let col = 0; col < 4; col += 1) circle(ctx, 11.5 + col * 7.7, 11.5 + row * 5.7, 2.2, colors[row * 4 + col] ?? '#1e3a8a');
+        }
+      } else {
+        const light = '#f0d9b5';
+        const dark = '#b58863';
+        for (let row = 0; row < 6; row += 1) {
+          for (let col = 0; col < 6; col += 1) {
+            ctx.fillStyle = (row + col) % 2 === 0 ? light : dark;
+            ctx.fillRect(8 + col * 5, 5 + row * 5, 5, 5);
+          }
+        }
+        circle(ctx, 15.5, 7.5, 1.6, '#111827');
+        circle(ctx, 25.5, 12.5, 1.6, '#111827');
+        circle(ctx, 20.5, 27.5, 1.6, '#f9fafb');
+        circle(ctx, 30.5, 32.5, 1.6, '#f9fafb');
+      }
+    },
+  },
   ARCADE: {
     width: 40,
     height: 34,

@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, GitPullRequest, Hammer, MapPin, type LucideIcon } from 'lucide-vue-next';
+import { Bell, CalendarDays, Gamepad2, GitPullRequest, Hammer, MapPin, type LucideIcon } from 'lucide-vue-next';
 
 import type { NotificationKind, NotificationTone } from './notification.types';
 
@@ -7,6 +7,7 @@ export const NOTIFICATION_ICONS: Record<NotificationKind, LucideIcon> = {
   BUILD: Hammer,
   PULL_REQUEST: GitPullRequest,
   LOCATION: MapPin,
+  GAME: Gamepad2,
   SYSTEM: Bell,
 };
 

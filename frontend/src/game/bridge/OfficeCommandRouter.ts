@@ -14,7 +14,9 @@ type CommandName =
   | typeof GAME_EVENTS.RECENTER_CAMERA
   | typeof GAME_EVENTS.SET_ZOOM
   | typeof GAME_EVENTS.NAVIGATE_LOCAL_PLAYER
-  | typeof GAME_EVENTS.CANCEL_LOCAL_NAVIGATION;
+  | typeof GAME_EVENTS.CANCEL_LOCAL_NAVIGATION
+  | typeof GAME_EVENTS.SET_GAME_STATION
+  | typeof GAME_EVENTS.SET_LOCAL_INPUT_ENABLED;
 
 export type OfficeCommandHandlers = {
   [K in CommandName]: (payload: GameEventPayloadMap[K]) => void;

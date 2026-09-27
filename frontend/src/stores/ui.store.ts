@@ -7,7 +7,8 @@ export type Selection =
   | { kind: 'employee'; id: UUID }
   | { kind: 'room'; id: UUID }
   | { kind: 'desk'; id: UUID }
-  | { kind: 'meeting'; id: UUID };
+  | { kind: 'meeting'; id: UUID }
+  | { kind: 'station'; id: string };
 
 interface UiStoreState {
   selection: Selection | null;

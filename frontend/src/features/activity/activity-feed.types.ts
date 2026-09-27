@@ -1,6 +1,6 @@
 import type { ISODateString, UUID } from '@virtual-office/shared';
 
-export type FeedItemKind = 'WORK_ITEM' | 'PULL_REQUEST' | 'BUILD' | 'MEETING' | 'PRESENCE' | 'LOCATION';
+export type FeedItemKind = 'WORK_ITEM' | 'PULL_REQUEST' | 'BUILD' | 'MEETING' | 'PRESENCE' | 'LOCATION' | 'GAME';
 
 export type FeedTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 

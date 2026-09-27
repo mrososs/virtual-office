@@ -1,4 +1,4 @@
-import type { ActivityType, BuildStatus, MeetingStatus, PresenceStatus, PullRequestStatus, UUID, WorkItemState } from '@virtual-office/shared';
+import { GAME_TYPE_LABEL, findGameStation, type ActivityType, type BuildStatus, type GameStationStatus, type MeetingStatus, type PresenceStatus, type PullRequestStatus, type UUID, type WorkItemState } from '@virtual-office/shared';
 import { nextTick, watch } from 'vue';
 
 import { GAME_EVENTS } from '@/game/bridge';
@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useDemoStore } from '@/stores/demo.store';
 import { useEmployeeStore } from '@/stores/employee.store';
 import { useFeedStore } from '@/stores/feed.store';
+import { useGameStore } from '@/stores/game.store';
 import { useMeetingStore } from '@/stores/meeting.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useRoomStore } from '@/stores/room.store';
@@ -27,6 +28,10 @@ const WORK_STATE_LABEL: Record<WorkItemState, string> = {
  * observes stores, so real integration events (Azure DevOps, Teams) will be
  * narrated exactly like the demo script. Baselines are re-taken on a hard
  * demo reset so a reset doesn't replay a burst of notifications.
+ *
+ * Chimes are opt-in per notification and only for what concerns this person
+ * (their review request, their meeting, a failed build that is theirs or the
+ * team's); everything else is silent. Sound is never the only signal.
  */
 export function useOfficeNarrator(): void {
   const employeeStore = useEmployeeStore();
@@ -37,6 +42,7 @@ export function useOfficeNarrator(): void {
   const notifications = useNotificationStore();
   const authStore = useAuthStore();
   const demoStore = useDemoStore();
+  const gameStore = useGameStore();
 
   let muted = false;
   watch(
@@ -67,6 +73,7 @@ export function useOfficeNarrator(): void {
           title: `${meeting.title} is starting soon`,
           body: `${where} · Microsoft Teams`,
           action: attending && meeting.roomId ? { kind: 'WALK_TO_ROOM', label: 'Walk me there', roomId: meeting.roomId } : { kind: 'OPEN_MEETING', label: 'Details', meetingId },
+          sound: attending ? 'NOTIFY' : undefined,
         });
       } else if (status === 'LIVE') {
         feed.push({ kind: 'MEETING', tone: 'info', actorEmployeeId: null, text: `${meeting.title} started in ${where}`, meetingId });
@@ -90,7 +97,8 @@ export function useOfficeNarrator(): void {
         notifications.notify({ kind: 'BUILD', tone: 'success', title: `Build #${build.externalId} passed`, body: `${build.pipelineName} · ${build.branch}` });
       } else if (status === 'FAILED') {
         feed.push({ kind: 'BUILD', tone: 'danger', actorEmployeeId: null, text: `Build ${label} failed` });
-        notifications.notify({ kind: 'BUILD', tone: 'danger', title: `Build #${build.externalId} failed`, body: build.pipelineName });
+        const concernsMe = build.triggeredByEmployeeId === null || build.triggeredByEmployeeId === authStore.currentEmployeeId;
+        notifications.notify({ kind: 'BUILD', tone: 'danger', title: `Build #${build.externalId} failed`, body: build.pipelineName, sound: concernsMe ? 'ALERT' : undefined });
       }
     },
   );
@@ -108,11 +116,18 @@ export function useOfficeNarrator(): void {
           title: `PR #${pr.externalId} is ready for review`,
           body: pr.title,
           action: pr.reviewerEmployeeIds[0] ? { kind: 'OPEN_EMPLOYEE', label: `Reviewer: ${nameOf(pr.reviewerEmployeeIds[0])}`, employeeId: pr.reviewerEmployeeIds[0] } : undefined,
+          sound: authStore.currentEmployeeId && pr.reviewerEmployeeIds.includes(authStore.currentEmployeeId) ? 'NOTIFY' : undefined,
         });
       } else if (status === 'APPROVED') {
         const reviewer = pr.reviewerEmployeeIds[0] ?? null;
         feed.push({ kind: 'PULL_REQUEST', tone: 'success', actorEmployeeId: reviewer, text: `approved PR #${pr.externalId}` });
-        notifications.notify({ kind: 'PULL_REQUEST', tone: 'success', title: `PR #${pr.externalId} approved`, body: `${pr.title} · by ${nameOf(reviewer)}` });
+        notifications.notify({
+          kind: 'PULL_REQUEST',
+          tone: 'success',
+          title: `PR #${pr.externalId} approved`,
+          body: `${pr.title} · by ${nameOf(reviewer)}`,
+          sound: pr.authorEmployeeId === authStore.currentEmployeeId ? 'SUCCESS' : undefined,
+        });
       }
     },
   );
@@ -148,6 +163,34 @@ export function useOfficeNarrator(): void {
     },
   );
 
+  // Game Room: one line when someone starts waiting, one when a game starts and one when it ends —
+  // never per move or point, and never a room link.
+  const lastPlayers = new Map<string, UUID[]>();
+  onTransition(
+    () => Object.fromEntries(Object.values(gameStore.stations).map((station) => [station.stationId, station.joinable ? 'OPEN' : 'CLOSED'])) as Record<string, 'OPEN' | 'CLOSED'>,
+    (stationId, openness) => {
+      const station = gameStore.stationOf(stationId);
+      const host = station?.participants[0]?.employeeId;
+      if (openness !== 'OPEN' || station?.status !== 'WAITING' || !host) return;
+      feed.push({ kind: 'GAME', tone: 'neutral', actorEmployeeId: host, text: `is waiting for ${GAME_TYPE_LABEL[findGameStation(stationId)?.gameType ?? 'PONG']}` });
+    },
+  );
+  onTransition(
+    () => Object.fromEntries(Object.values(gameStore.stations).map((station) => [station.stationId, station.status])) as Record<string, GameStationStatus>,
+    (stationId, status, previous) => {
+      const station = gameStore.stationOf(stationId);
+      const game = GAME_TYPE_LABEL[findGameStation(stationId)?.gameType ?? 'PONG'];
+      if (status === 'IN_GAME' && previous !== 'IN_GAME' && station) {
+        const [first, second] = station.participants.map((participant) => participant.employeeId);
+        lastPlayers.set(stationId, [first, second].filter((id): id is UUID => !!id));
+        feed.push({ kind: 'GAME', tone: 'neutral', actorEmployeeId: first ?? null, text: second ? `and ${nameOf(second)} started ${game}` : `started ${game}` });
+      } else if (previous === 'IN_GAME' && status !== 'IN_GAME') {
+        const players = lastPlayers.get(stationId) ?? [];
+        feed.push({ kind: 'GAME', tone: 'neutral', actorEmployeeId: null, text: players.length === 2 ? `${game} game ended · ${players.map(nameOf).join(' & ')}` : `${game} game ended` });
+      }
+    },
+  );
+
   useGameBridgeEvent(GAME_EVENTS.EMPLOYEE_ARRIVED, ({ employeeId, placement }) => {
     if (muted || placement.kind !== 'ROOM') return;
     const room = roomStore.byId(placement.roomId);
@@ -155,7 +198,7 @@ export function useOfficeNarrator(): void {
     notifications.notify({ kind: 'LOCATION', tone: 'info', title: `${nameOf(employeeId)} entered ${room.name}`, action: { kind: 'OPEN_EMPLOYEE', label: 'View', employeeId } });
   });
 
-  function onTransition<T extends string>(source: () => Record<UUID, T>, narrate: (id: UUID, next: T, previous: T) => void): void {
+  function onTransition<T extends string>(source: () => Record<string, T>, narrate: (id: string, next: T, previous: T) => void): void {
     watch(source, (next, previous) => {
       if (muted || !previous) return;
       for (const [id, value] of Object.entries(next)) {

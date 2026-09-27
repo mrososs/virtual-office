@@ -34,6 +34,8 @@ export function createGameConfig(parent: HTMLElement, cssWidth: number, cssHeigh
       keyboard: true,
       mouse: { preventDefaultWheel: true },
     },
+    // All audio goes through core/audio's SoundManager; Phaser must not open its own AudioContext on boot.
+    audio: { noAudio: true },
     physics: {
       default: 'arcade',
       arcade: { gravity: { x: 0, y: 0 }, debug: false },

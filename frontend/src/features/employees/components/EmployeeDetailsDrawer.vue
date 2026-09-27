@@ -8,6 +8,7 @@ import PullRequestCard from '@/features/azure-devops/components/PullRequestCard.
 import WorkItemCard from '@/features/azure-devops/components/WorkItemCard.vue';
 import { ACTIVITY_ICONS } from '@/features/employees/activity-icons';
 import MeetingStatusBadge from '@/features/meetings/components/MeetingStatusBadge.vue';
+import TeamsContactActions from '@/features/teams/components/TeamsContactActions.vue';
 import { useOfficeCommands } from '@/features/office/composables/useOfficeCommands';
 import { useStatusLookups } from '@/features/office/composables/useStatusLookups';
 import { BaseButton, DrawerShell } from '@/shared/components';
@@ -72,6 +73,10 @@ const locationLabel = computed(() => {
   return room.value?.name ?? 'Hallway';
 });
 
+function walkToDesk(): void {
+  if (desk.value) walkTo({ kind: 'DESK', deskId: desk.value.id }, `Walking to ${employee.value?.displayName.split(' ')[0] ?? 'their'}'s desk`);
+}
+
 function walkToEmployee(): void {
   if (employee.value) walkTo({ kind: 'EMPLOYEE', employeeId: employee.value.id }, `Walking to ${employee.value.displayName.split(' ')[0]}`);
 }
@@ -95,7 +100,7 @@ function walkToEmployee(): void {
     <div class="space-y-5 px-4 py-4">
       <section class="grid grid-cols-2 gap-2">
         <div class="rounded-lg border border-line/[0.07] bg-raised/60 px-3 py-2.5">
-          <p class="vo-section-label mb-1">Presence</p>
+          <p class="vo-section-label mb-1">Office presence</p>
           <p class="flex items-center gap-1.5 text-[13px] font-medium" :style="{ color: presenceMeta.color }">
             <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: presenceMeta.color }" />
             {{ presenceMeta.label }}
@@ -115,6 +120,8 @@ function walkToEmployee(): void {
       </section>
 
       <p v-if="!offline" class="-mt-2 text-[13px] leading-relaxed text-muted">{{ statusLineOf(employee) }}</p>
+
+      <TeamsContactActions v-if="!isMe" :employee="employee" />
 
       <section class="space-y-2">
         <p class="vo-section-label">Where</p>
@@ -158,10 +165,11 @@ function walkToEmployee(): void {
       </p>
     </div>
 
-    <template v-if="!offline" #footer>
-      <div class="flex gap-2">
-        <BaseButton size="sm" @click="focusEmployee(employee.id, { select: false })"><Crosshair :size="13" /> Show on map</BaseButton>
-        <BaseButton v-if="!isMe" size="sm" variant="primary" @click="walkToEmployee"><Footprints :size="13" /> Walk to {{ employee.displayName.split(' ')[0] }}</BaseButton>
+    <template v-if="!offline || (desk && !isMe)" #footer>
+      <div class="flex flex-wrap gap-2">
+        <BaseButton v-if="!offline" size="sm" @click="focusEmployee(employee.id, { select: false })"><Crosshair :size="13" /> Show on map</BaseButton>
+        <BaseButton v-if="desk && !isMe" size="sm" @click="walkToDesk"><Monitor :size="13" /> Walk to desk</BaseButton>
+        <BaseButton v-if="!isMe && !offline" size="sm" variant="primary" @click="walkToEmployee"><Footprints :size="13" /> Walk to {{ employee.displayName.split(' ')[0] }}</BaseButton>
       </div>
     </template>
   </DrawerShell>

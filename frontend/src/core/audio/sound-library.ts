@@ -15,6 +15,7 @@ export type SoundId =
   | 'room-collaboration'
   | 'game-ready'
   | 'station-near'
+  | 'room-teammate'
   | 'station-leave'
   | 'pong-hit'
   | 'pong-wall'
@@ -168,6 +169,16 @@ export const SOUND_LIBRARY: Readonly<Record<SoundId, SoundDefinition>> = {
     duration: 0.8,
     build(ctx) {
       arpeggio(ctx, [note('C5'), note('E5'), note('G5'), note('C6')], 0.07, 0.35, 0.13);
+    },
+  },
+  /** A teammate walked into the collaboration or meeting room you're in. Soft — Teams handles real call alerts. */
+  'room-teammate': {
+    category: 'notifications',
+    minIntervalMs: 3000,
+    duration: 0.55,
+    build(ctx) {
+      bell(ctx, { freq: note('D5'), decay: 0.3, gain: 0.1 });
+      bell(ctx, { freq: note('A5'), start: 0.09, decay: 0.38, gain: 0.08 });
     },
   },
   'station-near': {

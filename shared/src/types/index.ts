@@ -13,3 +13,4 @@ export * from './team.types.js';
 export * from './work.types.js';
 export * from './api.types.js';
 export * from './game.types.js';
+export * from './collaboration.types.js';

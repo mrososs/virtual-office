@@ -1,4 +1,5 @@
 import { useOfficeCommands } from '@/features/office/composables/useOfficeCommands';
+import { useTeamsActions } from '@/features/teams/composables/useTeamsActions';
 import type { NotificationAction } from '@/features/notifications/notification.types';
 import { useRoomStore } from '@/stores/room.store';
 import { useUiStore } from '@/stores/ui.store';
@@ -8,6 +9,7 @@ export function useNotificationActions() {
   const uiStore = useUiStore();
   const roomStore = useRoomStore();
   const { walkTo, focusEmployee } = useOfficeCommands();
+  const teams = useTeamsActions();
 
   function run(action: NotificationAction): void {
     switch (action.kind) {
@@ -19,6 +21,9 @@ export function useNotificationActions() {
         return;
       case 'OPEN_EMPLOYEE':
         void focusEmployee(action.employeeId);
+        return;
+      case 'TEAMS_GROUP_CALL':
+        teams.startGroupCall(action.roomId);
         return;
     }
   }

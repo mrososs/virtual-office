@@ -21,6 +21,7 @@ import { useGameBridgeEvent } from '@/shared/composables';
 import { useAuthStore } from '@/stores/auth.store';
 import { useDemoStore } from '@/stores/demo.store';
 import { useEmployeeStore } from '@/stores/employee.store';
+import { useCollaborationStore } from '@/stores/collaboration.store';
 import { useGameStore } from '@/stores/game.store';
 import { useMeetingStore } from '@/stores/meeting.store';
 import { useOfficeStore } from '@/stores/office.store';
@@ -48,7 +49,23 @@ export function useOfficeWorldSync() {
   const authStore = useAuthStore();
   const demoStore = useDemoStore();
   const gameStore = useGameStore();
+  const collaborationStore = useCollaborationStore();
   const { statusLineOf } = useStatusLookups();
+
+  /**
+   * Temporary office context over the avatar only (the stored Azure activity is untouched):
+   * a game table first, then being in a collaboration or meeting room right now (server occupancy).
+   */
+  function officeContextOf(employee: Employee): { activity: EmployeeStatusView['activity'] | null; line: string } | null {
+    if (employee.presence.status === 'OFFLINE') return null;
+    const game = gameStore.contextLabelOf(employee.id);
+    if (game) return { activity: 'BREAK', line: game };
+    const roomId = collaborationStore.liveRoomOf(employee.id);
+    const room = roomId ? roomStore.byId(roomId) : undefined;
+    if (room?.type === 'CODE_REVIEW') return { activity: null, line: 'Collaborating' };
+    if (room?.type === 'MEETING') return { activity: 'MEETING', line: `In ${room.name}` };
+    return null;
+  }
 
   const connected = shallowRef(false);
   const lastStatus = new Map<UUID, string>();
@@ -59,14 +76,13 @@ export function useOfficeWorldSync() {
   const localEmployeeId = computed(() => authStore.currentEmployeeId);
 
   function statusView(employee: Employee): EmployeeStatusView {
-    // At a game table: temporary context over the avatar only — the stored activity (Azure work) is untouched.
-    const game = employee.presence.status === 'OFFLINE' ? null : gameStore.contextLabelOf(employee.id);
+    const context = officeContextOf(employee);
     return {
       employeeId: employee.id,
       displayName: employee.displayName,
       presence: employee.presence.status,
-      activity: game ? 'BREAK' : employee.activity.type,
-      statusLine: game ?? statusLineOf(employee),
+      activity: context?.activity ?? employee.activity.type,
+      statusLine: context?.line ?? statusLineOf(employee),
     };
   }
 

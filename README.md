@@ -97,6 +97,8 @@ npm run preview -w frontend   # serve the built PWA on http://localhost:4173 (AP
   never bypasses, identities, the simulation.
 - [`docs/ACTIVITY_ENGINE.md`](./docs/ACTIVITY_ENGINE.md) — how work-tool
   signals resolve into an employee's activity state.
+- [`docs/TEAMS_DEEP_LINKS.md`](./docs/TEAMS_DEEP_LINKS.md) — current Teams integration: chat,
+  audio calls, collaboration-room group calls, meeting-room links (deep links, no Graph)
 - [`docs/MEETINGS_AND_TEAMS.md`](./docs/MEETINGS_AND_TEAMS.md) — meeting
   scheduling, room allocation, Teams join flow, future ACS embedding.
 - [`docs/DATABASE_SCHEMA.md`](./docs/DATABASE_SCHEMA.md) — Supabase tables,

@@ -7,6 +7,7 @@ import { ROOM_ICONS } from '@/features/employees/activity-icons';
 import EmployeeAvatar from '@/features/employees/components/EmployeeAvatar.vue';
 import EmployeeStatus from '@/features/employees/components/EmployeeStatus.vue';
 import MeetingStatusBadge from '@/features/meetings/components/MeetingStatusBadge.vue';
+import RoomTeamsPanel from '@/features/teams/components/RoomTeamsPanel.vue';
 import { useOfficeCommands } from '@/features/office/composables/useOfficeCommands';
 import { BaseButton, DrawerShell, StatusBadge } from '@/shared/components';
 import { ROOM_TYPE_META } from '@/shared/constants';
@@ -105,6 +106,8 @@ const availability = computed(() => {
         </ul>
         <p v-else class="text-xs text-subtle">Nobody is here right now.</p>
       </section>
+
+      <RoomTeamsPanel v-if="room.type === 'CODE_REVIEW' || room.type === 'MEETING'" :room-id="room.id" />
     </div>
 
     <template #footer>

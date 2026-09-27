@@ -15,7 +15,9 @@ export type NotificationTone = 'info' | 'success' | 'warning' | 'danger';
 export type NotificationAction =
   | { kind: 'WALK_TO_ROOM'; label: string; roomId: UUID }
   | { kind: 'OPEN_MEETING'; label: string; meetingId: UUID }
-  | { kind: 'OPEN_EMPLOYEE'; label: string; employeeId: UUID };
+  | { kind: 'OPEN_EMPLOYEE'; label: string; employeeId: UUID }
+  /** Opens a Teams group call with whoever is in that room at click time (server occupancy). */
+  | { kind: 'TEAMS_GROUP_CALL'; label: string; roomId: UUID };
 
 export interface AppNotification {
   id: string;

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { AvatarProfile, Direction, UUID, Vector2 } from '@virtual-office/shared';
+import type { AvatarProfile, Direction, LiveRoomOccupancy, UUID, Vector2 } from '@virtual-office/shared';
 
 export interface OfficeMember {
   employeeId: UUID;
@@ -9,6 +9,8 @@ export interface OfficeMember {
   direction: Direction;
   /** Latest look, replayed to late joiners so they render it without a separate request. */
   avatar: AvatarProfile | null;
+  /** The room the employee's avatar last reported being in (null = hallway). Cleared when they leave the office. */
+  roomId: UUID | null;
 }
 
 /**
@@ -41,19 +43,51 @@ export class OfficePresenceRegistry {
       position: member.position,
       direction: member.direction,
       avatar: member.avatar,
+      roomId: null,
     });
     return true;
   }
 
-  /** Returns true when that was the employee's last connection (they have now left the office). */
-  leave(officeId: UUID, employeeId: UUID, socketId: string): boolean {
+  /**
+   * Returns `left: true` when that was the employee's last connection (they
+   * have now left the office), with the room they were in so it can be
+   * updated for everyone — no stale occupant survives a closed tab.
+   */
+  leave(officeId: UUID, employeeId: UUID, socketId: string): { left: boolean; roomId: UUID | null } {
     const members = this.membersByOffice.get(officeId);
     const member = members?.get(employeeId);
-    if (!members || !member || !member.socketIds.delete(socketId)) return false;
-    if (member.socketIds.size > 0) return false;
+    if (!members || !member || !member.socketIds.delete(socketId)) return { left: false, roomId: null };
+    if (member.socketIds.size > 0) return { left: false, roomId: null };
     members.delete(employeeId);
     if (members.size === 0) this.membersByOffice.delete(officeId);
-    return true;
+    return { left: true, roomId: member.roomId };
+  }
+
+  /** Records the room an employee is in. Returns the previous room, or undefined when nothing changed. */
+  setRoom(officeId: UUID, employeeId: UUID, roomId: UUID | null): { previous: UUID | null } | undefined {
+    const member = this.membersByOffice.get(officeId)?.get(employeeId);
+    if (!member || member.roomId === roomId) return undefined;
+    const previous = member.roomId;
+    member.roomId = roomId;
+    return { previous };
+  }
+
+  roomOf(officeId: UUID, employeeId: UUID): UUID | null {
+    return this.membersByOffice.get(officeId)?.get(employeeId)?.roomId ?? null;
+  }
+
+  /** Connected employees in a room, in a stable order. */
+  occupants(officeId: UUID, roomId: UUID): LiveRoomOccupancy {
+    const members = this.membersByOffice.get(officeId);
+    const employeeIds = members ? [...members.values()].filter((member) => member.roomId === roomId).map((member) => member.employeeId).sort() : [];
+    return { roomId, employeeIds };
+  }
+
+  /** Every room with at least one connected employee in it. */
+  occupiedRooms(officeId: UUID): LiveRoomOccupancy[] {
+    const rooms = new Set<UUID>();
+    for (const member of this.membersByOffice.get(officeId)?.values() ?? []) if (member.roomId) rooms.add(member.roomId);
+    return [...rooms].map((roomId) => this.occupants(officeId, roomId));
   }
 
   updatePosition(officeId: UUID, employeeId: UUID, position: Vector2, direction: Direction): void {

@@ -4,6 +4,7 @@ import { runtimeEnv } from '@/core/config';
 import { socketClient } from '@/core/socket';
 import { useOfficeNarrator } from '@/features/activity/composables/useOfficeNarrator';
 import { useGameRoomSync } from '@/features/games/composables/useGameRoomSync';
+import { useLiveRoomsSync } from '@/features/teams/composables/useLiveRoomsSync';
 import { applyOfficeSnapshot } from '@/features/office/data/apply-office-snapshot';
 import { resolveOfficeDataSource } from '@/features/office/data/office-data-source';
 import { GAME_EVENTS, type RealtimeOptions } from '@/game/bridge';
@@ -32,6 +33,7 @@ export function useOfficeExperience() {
   useOfficeNarrator();
   useOfficeSounds();
   useGameRoomSync();
+  useLiveRoomsSync();
   if (!runtimeEnv.demoMode) useOfficeLiveUpdates();
 
   const gameReady = shallowRef(false);

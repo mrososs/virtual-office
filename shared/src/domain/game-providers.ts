@@ -1,5 +1,7 @@
 import type { GameRoomMode, GameType } from '../types/game.types.js';
 
+import { checkAllowlistedUrl, MAX_SAFE_LINK_LENGTH } from './safe-links.js';
+
 /**
  * An external browser game the Game Room can send people to. This catalog is
  * code-reviewed configuration: the only hosts a room link may ever point to,
@@ -100,49 +102,29 @@ export type ExternalInviteCheck =
   | { ok: true; url: string; code: string | null }
   | { ok: false; reason: string };
 
-const MAX_INVITE_LENGTH = 512;
-const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
-
 /**
  * Checks what a host pasted (or what a provider API returned) against the
- * provider's rules and returns the one normalized form the office will
- * store and open. Uses the platform URL parser, never a URL regex:
- * HTTPS only · no credentials · default port · exact allowlisted hostname
- * (no IPs, no localhost, no look-alike subdomains) · allowed path ·
- * only allowlisted query parameters survive · the fragment is dropped.
- * ROOM_CODE providers take a code instead of a link and always open their
- * fixed start page.
+ * provider's rules and returns the one normalized form the office will store
+ * and open (see `checkAllowlistedUrl` for the link rules). ROOM_CODE providers
+ * take a code instead of a link and always open their fixed start page.
  */
 export function checkExternalInvite(provider: GameProvider, input: unknown): ExternalInviteCheck {
-  if (typeof input !== 'string') return { ok: false, reason: 'Paste the invite link.' };
-  const value = input.trim();
-  if (!value) return { ok: false, reason: provider.roomMode === 'ROOM_CODE' ? 'Paste the room code.' : 'Paste the invite link.' };
-  if (value.length > MAX_INVITE_LENGTH) return { ok: false, reason: 'That is too long to be an invite.' };
+  if (typeof input !== 'string' || !input.trim()) return { ok: false, reason: provider.roomMode === 'ROOM_CODE' ? 'Paste the room code.' : 'Paste the invite link.' };
+  if (input.trim().length > MAX_SAFE_LINK_LENGTH) return { ok: false, reason: 'That is too long to be an invite.' };
 
   if (provider.roomMode === 'ROOM_CODE') {
-    const code = value.toUpperCase();
+    const code = input.trim().toUpperCase();
     return provider.roomCode?.test(code) ? { ok: true, url: provider.startUrl, code } : { ok: false, reason: `That doesn't look like a ${provider.name} room code.` };
   }
-
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return { ok: false, reason: 'That is not a link. Copy the whole invite link.' };
-  }
-  const host = url.hostname.toLowerCase();
-  if (url.protocol !== 'https:') return { ok: false, reason: 'Only secure https:// links are allowed.' };
-  if (url.username || url.password) return { ok: false, reason: 'Links with a username or password are not allowed.' };
-  if (url.port) return { ok: false, reason: 'Links with a custom port are not allowed.' };
-  if (host === 'localhost' || IPV4.test(host) || host.includes(':') || host.startsWith('[')) return { ok: false, reason: 'Links to an IP address or this computer are not allowed.' };
-  if (!provider.allowedHosts.includes(host)) return { ok: false, reason: `Only ${provider.allowedHosts.join(', ')} links work at this table.` };
-  if (!provider.invitePath?.test(url.pathname)) return { ok: false, reason: `That is not a ${provider.name} room link.` };
-
-  const kept = new URLSearchParams();
-  for (const [key, pattern] of Object.entries(provider.allowedQuery ?? {})) {
-    const param = url.searchParams.get(key);
-    if (param !== null && pattern.test(param)) kept.set(key, param);
-  }
-  const query = kept.toString();
-  return { ok: true, url: `https://${host}${url.pathname}${query ? `?${query}` : ''}`, code: null };
+  const check = checkAllowlistedUrl(
+    {
+      label: `${provider.name} room`,
+      allowedHosts: provider.allowedHosts,
+      paths: provider.invitePath ? [provider.invitePath] : [],
+      allowedQuery: provider.allowedQuery,
+      hostHint: () => `Only ${provider.allowedHosts.join(', ')} links work at this table.`,
+    },
+    input,
+  );
+  return check.ok ? { ok: true, url: check.url, code: null } : check;
 }

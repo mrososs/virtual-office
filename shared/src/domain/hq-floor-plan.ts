@@ -81,6 +81,10 @@ export const HQ_DESK_ROOMS: ReadonlyArray<{ deskId: HqDeskId; roomId: HqRoomId }
   { deskId: HQ_DESK.qa03, roomId: HQ_ROOM.qa },
 ];
 
+export function isHqRoomId(value: unknown): value is HqRoomId {
+  return typeof value === 'string' && value in HQ_ROOM_TYPES;
+}
+
 export function isHqDeskId(value: unknown): value is HqDeskId {
   return typeof value === 'string' && HQ_DESK_ROOMS.some((entry) => entry.deskId === value);
 }

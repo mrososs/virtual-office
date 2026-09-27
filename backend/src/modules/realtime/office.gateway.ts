@@ -16,7 +16,12 @@ import {
   ClientToServerEvents,
   Direction,
   EmployeePresenceChangedPayload,
+  HQ_ROOM_TYPES,
   InterServerEvents,
+  isHqRoomId,
+  MeetingRoomClearPayload,
+  MeetingRoomErrorCode,
+  MeetingRoomSetLinkPayload,
   normalizeAvatarProfile,
   OfficeJoinPayload,
   OfficeLeavePayload,
@@ -24,6 +29,7 @@ import {
   PlayerJoinedPayload,
   PlayerLeftPayload,
   PlayerMovePayload,
+  PlayerRoomPayload,
   ServerToClientEvents,
   SOCKET_EVENTS,
   SocketData,
@@ -34,9 +40,11 @@ import { AppConfig } from '../../config/configuration';
 import { ActivityEngine } from '../activities/activity-engine.service';
 import { WorkSyncEvents } from '../azure-devops/work-sync-events';
 import { DemoTokenService } from '../demo/demo-token.service';
+import { SocketRateLimiter } from '../games/socket-rate-limiter';
 import { PresenceService } from '../presence/presence.service';
 import { SessionEvents } from '../session/session-events';
 import { SessionService } from '../session/session.service';
+import { MeetingRoomError, MeetingRoomSessions } from './meeting-room-sessions';
 import { OfficePresenceRegistry } from './office-presence.registry';
 
 type OfficeSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -58,6 +66,13 @@ const MAX_COORDINATE = 20_000;
  * (`auth.token`) is accepted instead. Payload `employeeId`s must match.
  * One Socket.IO room per office scopes every broadcast. Presence (DB) and
  * domain broadcasts (activity, work sync) apply to session sockets only.
+ *
+ * Live rooms: each client reports the room its avatar is in (`player:room`);
+ * the server keeps one occupancy per room — connected employees only, cleared
+ * when their last tab closes — and it is the only source for Teams group calls
+ * and meeting-room participants. Meeting rooms can hold a pasted, validated
+ * Teams meeting link (`MeetingRoomSessions`); only someone inside the room
+ * (or whoever attached it) may change or end it.
  */
 @WebSocketGateway({
   // The handshake middleware enforces APP_URL's origin (decorator options cannot read config).
@@ -68,6 +83,8 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private readonly app: AppConfig;
   /** Sockets currently counted in `employee_presence` (so leave + disconnect never decrement twice). */
   private readonly countedSockets = new Set<string>();
+  /** Room reports and meeting-room changes: a person crossing rooms never gets near this. */
+  private readonly roomLimiter = new SocketRateLimiter(20, 5);
   private subscriptions: Subscription[] = [];
 
   @WebSocketServer()
@@ -82,6 +99,7 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     private readonly registry: OfficePresenceRegistry,
     private readonly activityEngine: ActivityEngine,
     private readonly workSyncEvents: WorkSyncEvents,
+    private readonly meetingRooms: MeetingRoomSessions,
   ) {
     this.app = configService.get<AppConfig>('app')!;
   }
@@ -93,6 +111,9 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.activityEngine.changes$.subscribe((payload) => this.server?.to(officeId).emit(SOCKET_EVENTS.EMPLOYEE_ACTIVITY_CHANGED, payload)),
       this.workSyncEvents.synced$.subscribe((payload) => this.server?.to(officeId).emit(SOCKET_EVENTS.WORK_SYNCED, payload)),
     ];
+    this.meetingRooms.setExpiryListener((expiredOfficeId, roomId) =>
+      this.server?.to(expiredOfficeId).emit(SOCKET_EVENTS.MEETING_ROOM_SESSION_CHANGED, { roomId, session: null }),
+    );
   }
 
   onModuleDestroy(): void {
@@ -113,6 +134,7 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
 
   handleDisconnect(client: OfficeSocket): void {
+    this.roomLimiter.forget(client.id);
     void this.leaveOffice(client);
     this.logger.debug(`Socket disconnected: ${client.id}`);
   }
@@ -153,6 +175,8 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       const joinedPayload: PlayerJoinedPayload = { employeeId, position, direction, avatar };
       client.to(officeId).emit(SOCKET_EVENTS.PLAYER_JOINED, joinedPayload);
     }
+    client.emit(SOCKET_EVENTS.ROOM_LIVE_SNAPSHOT, { rooms: this.registry.occupiedRooms(officeId) });
+    client.emit(SOCKET_EVENTS.MEETING_ROOM_SESSIONS, { sessions: this.meetingRooms.all(officeId) });
 
     if (isSession) {
       this.countedSockets.add(client.id);
@@ -203,7 +227,60 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     });
   }
 
+  /** The room my avatar is in now. Unknown room ids are ignored; the employee is always the socket's. */
+  @SubscribeMessage(SOCKET_EVENTS.PLAYER_ROOM)
+  handlePlayerRoom(@ConnectedSocket() client: OfficeSocket, @MessageBody() payload: PlayerRoomPayload): void {
+    const { officeId, employeeId } = client.data;
+    const roomId = payload?.roomId ?? null;
+    if (!officeId || (roomId !== null && !isHqRoomId(roomId)) || !this.roomLimiter.allow(client.id)) return;
+    const change = this.registry.setRoom(officeId, employeeId, roomId);
+    if (!change) return;
+    for (const id of new Set([change.previous, roomId])) if (id) this.broadcastRoom(officeId, id);
+  }
+
+  /** Attaches a pasted Teams meeting link to the meeting room the caller is standing in. */
+  @SubscribeMessage(SOCKET_EVENTS.MEETING_ROOM_SET_LINK)
+  handleMeetingRoomSetLink(@ConnectedSocket() client: OfficeSocket, @MessageBody() payload: MeetingRoomSetLinkPayload): void {
+    const { officeId, employeeId } = client.data;
+    const roomId = payload?.roomId;
+    if (!officeId) return;
+    if (!this.roomLimiter.allow(client.id)) return this.meetingRoomError(client, 'RATE_LIMITED', 'Slow down a little.');
+    if (!isHqRoomId(roomId) || HQ_ROOM_TYPES[roomId] !== 'MEETING') return this.meetingRoomError(client, 'NOT_A_MEETING_ROOM', 'Teams meetings can only be attached to meeting rooms.');
+    if (this.registry.roomOf(officeId, employeeId) !== roomId) return this.meetingRoomError(client, 'NOT_IN_ROOM', 'Walk into the meeting room to attach its Teams meeting.');
+    try {
+      const session = this.meetingRooms.set(officeId, roomId, employeeId, payload.title, payload.joinUrl);
+      this.server.to(officeId).emit(SOCKET_EVENTS.MEETING_ROOM_SESSION_CHANGED, { roomId, session });
+    } catch (error) {
+      if (error instanceof MeetingRoomError) this.meetingRoomError(client, error.code, error.message);
+      else throw error;
+    }
+  }
+
+  /** Ends a meeting room's Teams session: whoever attached it, or anyone currently in the room. */
+  @SubscribeMessage(SOCKET_EVENTS.MEETING_ROOM_CLEAR)
+  handleMeetingRoomClear(@ConnectedSocket() client: OfficeSocket, @MessageBody() payload: MeetingRoomClearPayload): void {
+    const { officeId, employeeId } = client.data;
+    const roomId = payload?.roomId;
+    if (!officeId || !isHqRoomId(roomId)) return;
+    if (!this.roomLimiter.allow(client.id)) return this.meetingRoomError(client, 'RATE_LIMITED', 'Slow down a little.');
+    const session = this.meetingRooms.get(officeId, roomId);
+    if (!session) return;
+    if (session.createdBy !== employeeId && this.registry.roomOf(officeId, employeeId) !== roomId) {
+      return this.meetingRoomError(client, 'NOT_ALLOWED', 'Only someone in the room, or whoever attached the meeting, can end it.');
+    }
+    this.meetingRooms.clear(officeId, roomId);
+    this.server.to(officeId).emit(SOCKET_EVENTS.MEETING_ROOM_SESSION_CHANGED, { roomId, session: null });
+  }
+
   /* Internals ---------------------------------------------------------------- */
+
+  private broadcastRoom(officeId: string, roomId: string): void {
+    this.server.to(officeId).emit(SOCKET_EVENTS.ROOM_LIVE_OCCUPANCY, this.registry.occupants(officeId, roomId));
+  }
+
+  private meetingRoomError(client: OfficeSocket, code: MeetingRoomErrorCode, message: string): void {
+    client.emit(SOCKET_EVENTS.MEETING_ROOM_ERROR, { code, message });
+  }
 
   private async authenticate(socket: OfficeSocket): Promise<void> {
     const origin = socket.handshake.headers.origin;
@@ -242,10 +319,11 @@ export class OfficeGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     client.data.officeId = undefined;
     void client.leave(officeId);
 
-    const lastConnection = this.registry.leave(officeId, employeeId, client.id);
+    const { left: lastConnection, roomId } = this.registry.leave(officeId, employeeId, client.id);
     if (lastConnection) {
       const payload: PlayerLeftPayload = { employeeId };
       this.server.to(officeId).emit(SOCKET_EVENTS.PLAYER_LEFT, payload);
+      if (roomId) this.broadcastRoom(officeId, roomId);
     }
 
     if (!this.countedSockets.delete(client.id)) return;

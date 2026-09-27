@@ -7,6 +7,9 @@ import type {
   GameSession,
   GameStationState,
   ISODateString,
+  LiveRoomOccupancy,
+  MeetingRoomErrorCode,
+  MeetingRoomSession,
   Meeting,
   BuildStatus,
   PlayerControlMode,
@@ -41,6 +44,24 @@ export const SOCKET_EVENTS = {
   EMPLOYEE_ROOM_CHANGED: 'employee:room_changed',
 
   ROOM_OCCUPANCY_CHANGED: 'room:occupancy_changed',
+
+  /* Live rooms (Teams collaboration and meeting rooms) — identity always from the authenticated socket. */
+  /** Client → server: the room my avatar is in now (null = hallway). */
+  PLAYER_ROOM: 'player:room',
+  /** Server → one client (after office:join): every room with connected people in it. */
+  ROOM_LIVE_SNAPSHOT: 'room:live_snapshot',
+  /** Server → office: who is in one room now. */
+  ROOM_LIVE_OCCUPANCY: 'room:live_occupancy',
+  /** Client → server: attach a pasted Teams meeting link to the meeting room I'm in. */
+  MEETING_ROOM_SET_LINK: 'meeting_room:set_link',
+  /** Client → server: end a meeting room's Teams session. */
+  MEETING_ROOM_CLEAR: 'meeting_room:clear',
+  /** Server → one client (after office:join): every meeting room session. */
+  MEETING_ROOM_SESSIONS: 'meeting_room:sessions',
+  /** Server → office: one meeting room's session changed (null = ended). */
+  MEETING_ROOM_SESSION_CHANGED: 'meeting_room:session_changed',
+  /** Server → one client: a meeting-room request was refused. */
+  MEETING_ROOM_ERROR: 'meeting_room:error',
 
   MEETING_SCHEDULED: 'meeting:scheduled',
   MEETING_STARTING_SOON: 'meeting:starting_soon',
@@ -202,6 +223,40 @@ export interface SessionEndedPayload {
   reason: 'SIGNED_OUT' | 'EXPIRED' | 'DISABLED';
 }
 
+export interface PlayerRoomPayload {
+  roomId: UUID | null;
+}
+
+export interface RoomLiveSnapshotPayload {
+  rooms: LiveRoomOccupancy[];
+}
+
+export type RoomLiveOccupancyPayload = LiveRoomOccupancy;
+
+export interface MeetingRoomSetLinkPayload {
+  roomId: UUID;
+  title: string;
+  joinUrl: string;
+}
+
+export interface MeetingRoomClearPayload {
+  roomId: UUID;
+}
+
+export interface MeetingRoomSessionsPayload {
+  sessions: MeetingRoomSession[];
+}
+
+export interface MeetingRoomSessionChangedPayload {
+  roomId: UUID;
+  session: MeetingRoomSession | null;
+}
+
+export interface MeetingRoomErrorPayload {
+  code: MeetingRoomErrorCode;
+  message: string;
+}
+
 export interface GameStationRequestPayload {
   stationId: string;
 }
@@ -264,6 +319,12 @@ export interface ServerToClientEvents {
   [SOCKET_EVENTS.WORK_SYNCED]: (payload: WorkSyncedPayload) => void;
   [SOCKET_EVENTS.SESSION_ENDED]: (payload: SessionEndedPayload) => void;
 
+  [SOCKET_EVENTS.ROOM_LIVE_SNAPSHOT]: (payload: RoomLiveSnapshotPayload) => void;
+  [SOCKET_EVENTS.ROOM_LIVE_OCCUPANCY]: (payload: RoomLiveOccupancyPayload) => void;
+  [SOCKET_EVENTS.MEETING_ROOM_SESSIONS]: (payload: MeetingRoomSessionsPayload) => void;
+  [SOCKET_EVENTS.MEETING_ROOM_SESSION_CHANGED]: (payload: MeetingRoomSessionChangedPayload) => void;
+  [SOCKET_EVENTS.MEETING_ROOM_ERROR]: (payload: MeetingRoomErrorPayload) => void;
+
   [SOCKET_EVENTS.GAME_STATIONS]: (payload: GameStationsPayload) => void;
   [SOCKET_EVENTS.GAME_STATION_UPDATED]: (payload: GameStationUpdatedPayload) => void;
   [SOCKET_EVENTS.GAME_SESSION]: (payload: GameSessionPayload) => void;
@@ -276,6 +337,10 @@ export interface ClientToServerEvents {
   [SOCKET_EVENTS.OFFICE_LEAVE]: (payload: OfficeLeavePayload) => void;
   [SOCKET_EVENTS.PLAYER_MOVE]: (payload: PlayerMovePayload) => void;
   [SOCKET_EVENTS.PLAYER_AVATAR_UPDATE]: (payload: PlayerAvatarUpdatedPayload) => void;
+
+  [SOCKET_EVENTS.PLAYER_ROOM]: (payload: PlayerRoomPayload) => void;
+  [SOCKET_EVENTS.MEETING_ROOM_SET_LINK]: (payload: MeetingRoomSetLinkPayload) => void;
+  [SOCKET_EVENTS.MEETING_ROOM_CLEAR]: (payload: MeetingRoomClearPayload) => void;
 
   [SOCKET_EVENTS.GAME_SYNC]: () => void;
   [SOCKET_EVENTS.GAME_JOIN_TABLE]: (payload: GameStationRequestPayload) => void;

@@ -10,3 +10,4 @@ export * from './notification.store';
 export * from './feed.store';
 export * from './demo.store';
 export * from './game.store';
+export * from './collaboration.store';

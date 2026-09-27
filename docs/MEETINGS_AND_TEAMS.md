@@ -1,5 +1,10 @@
 # Meetings & Microsoft Teams integration
 
+> **What works today:** Teams chat, audio calls, collaboration-room group calls and
+> shared meeting-room links through official deep links — no Graph, no app
+> registration. See [`TEAMS_DEEP_LINKS.md`](./TEAMS_DEEP_LINKS.md). The Graph-based flow
+> below is the **future target**, inactive until IT approves an app registration.
+
 ## Flow (target architecture)
 
 ```

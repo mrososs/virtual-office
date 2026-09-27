@@ -6,6 +6,7 @@ import { runtimeEnv } from '@/core/config';
 import DemoControlPanel from '@/features/demo/components/DemoControlPanel.vue';
 import GameStatusPill from '@/features/games/game-room/GameStatusPill.vue';
 import PongOverlay from '@/features/games/pong/PongOverlay.vue';
+import RoomTeamsCard from '@/features/teams/components/RoomTeamsCard.vue';
 import ControlsHint from '@/features/office/components/ControlsHint.vue';
 import DetailsDrawerHost from '@/features/office/components/DetailsDrawerHost.vue';
 import InteractionPrompt from '@/features/office/components/InteractionPrompt.vue';
@@ -67,6 +68,8 @@ const showDisconnected = computed(() => !runtimeEnv.demoMode && officeStore.real
         <LocationChip />
       </div>
       <ZoomControls />
+      <!-- Collaboration / meeting room Teams actions while you stand in one (above the zoom controls). -->
+      <RoomTeamsCard class="absolute bottom-16 right-3 z-10" />
 
       <!-- Internal Pong only (no station uses it today); external games open in their own tab. -->
       <PongOverlay v-if="gameStore.session?.kind === 'PONG'" :session="gameStore.session" />
